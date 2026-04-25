@@ -6,11 +6,13 @@ load_dotenv()
 
 import cv2
 import mediapipe as mp
+import pyautogui
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
 from features.cursor_control import CursorControlFeature
 from features.media_control import MediaControlFeature
+from features.common_gestures import CommonGesturesFeature
 
 
 # Landmark indices in MediaPipe Hands.
@@ -119,7 +121,7 @@ def draw_hand_landmarks(frame, landmarks):
         )
 
 
-def draw_status_overlay(frame, cursor_status, media_status):
+def draw_status_overlay(frame, cursor_status, media_status, common_status):
     mode_text = "Mouse Control: ON" if cursor_status.active else "Mouse Control: OFF"
     color = (40, 220, 40) if cursor_status.active else (50, 50, 220)
     cv2.putText(frame, mode_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
@@ -136,19 +138,22 @@ def draw_status_overlay(frame, cursor_status, media_status):
         )
 
     if media_status.cooldown_active:
-        media_label = "Open Palm: cooldown"
+        media_label = "Media hand: cooldown"
         media_color = (180, 180, 50)
     elif media_status.gesture_detected:
-        media_label = "Open Palm: holding..."
+        media_label = "Media hand: holding..."
         media_color = (50, 200, 255)
     else:
-        media_label = "Open Palm: ready"
+        media_label = "Media hand: ready"
         media_color = (130, 130, 130)
     cv2.putText(frame, media_label, (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, media_color, 2)
 
+    gesture_label = f"Common Gesture: {common_status.gesture or 'none'}"
+    cv2.putText(frame, gesture_label, (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2)
+
     cv2.putText(
         frame,
-        "Press q to quit",
+        "Press 'q' to quit",
         (10, frame.shape[0] - 12),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,
@@ -186,16 +191,52 @@ def draw_status_overlay(frame, cursor_status, media_status):
             cv2.LINE_AA,
         )
 
+    # Flash "YES" or "NO" when a common gesture triggers.
+    if common_status.triggered == "thumbs_up":
+        h, w = frame.shape[:2]
+        cv2.putText(
+            frame,
+            "YES",
+            (w // 2 - 45, h // 2 + 90),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.6,
+            (40, 220, 40),
+            3,
+            cv2.LINE_AA,
+        )
+    elif common_status.triggered == "thumbs_down":
+        h, w = frame.shape[:2]
+        cv2.putText(
+            frame,
+            "NO",
+            (w // 2 - 30, h // 2 + 90),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.6,
+            (50, 50, 220),
+            3,
+            cv2.LINE_AA,
+        )
+
 
 def main():
     model_path = resolve_model_path()
     hand_landmarker = create_hand_landmarker(model_path)
     cursor_feature = CursorControlFeature()
     media_feature = MediaControlFeature()
+    common_feature = CommonGesturesFeature()
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         raise RuntimeError("Could not open camera.")
+
+    win_name = "Hand Mouse Control"
+    screen_w, screen_h = pyautogui.size()
+    win_w, win_h = int(screen_w * 0.7), int(screen_h * 0.7)
+    cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(win_name, win_w, win_h)
+    win_x = (screen_w - win_w) // 2
+    win_y = int(screen_h * 0.40) - win_h // 2
+    cv2.moveWindow(win_name, win_x, win_y)
 
     try:
         while True:
@@ -217,10 +258,13 @@ def main():
 
             cursor_status = cursor_feature.process_landmarks(landmarks)
             media_status = media_feature.process_landmarks(landmarks)
-            draw_status_overlay(frame, cursor_status, media_status)
+            common_status = common_feature.process_landmarks(landmarks)
+            draw_status_overlay(frame, cursor_status, media_status, common_status)
 
-            cv2.imshow("Hand Mouse Control", frame)
+            cv2.imshow(win_name, frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+            if cv2.getWindowProperty(win_name, cv2.WND_PROP_VISIBLE) < 1:
                 break
     finally:
         cursor_feature.release()
