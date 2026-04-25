@@ -13,6 +13,7 @@ from mediapipe.tasks.python import vision
 from features.cursor_control import CursorControlFeature
 from features.media_control import MediaControlFeature
 from features.common_gestures import CommonGesturesFeature
+from logger import log_event
 
 
 # Landmark indices in MediaPipe Hands.
@@ -270,6 +271,13 @@ def main():
     win_y = int(screen_h * 0.40) - win_h // 2
     cv2.moveWindow(win_name, win_x, win_y)
 
+    prev_cursor_active = False
+    prev_mouse_down = False
+    prev_double_click = False
+    prev_triple_click = False
+    prev_media_triggered = False
+    prev_common_triggered = None
+
     try:
         while True:
             ok, frame = cap.read()
@@ -292,6 +300,31 @@ def main():
             media_status = media_feature.process_landmarks(landmarks)
             common_status = common_feature.process_landmarks(landmarks)
             draw_status_overlay(frame, cursor_status, media_status, common_status)
+
+            # Log gesture events on state transitions (once per event, not every frame).
+            if cursor_status.active != prev_cursor_active:
+                log_event("cursor_on" if cursor_status.active else "cursor_off",
+                          "Cursor Mode ON" if cursor_status.active else "Cursor Mode OFF")
+            if cursor_status.mouse_down and not prev_mouse_down:
+                log_event("single_click", "Single Click")
+            if cursor_status.double_click and not prev_double_click:
+                log_event("double_click", "Double Click")
+            if cursor_status.triple_click and not prev_triple_click:
+                log_event("triple_click", "Triple Click")
+            if media_status.triggered and not prev_media_triggered:
+                log_event("media_play_pause", "Play / Pause")
+            if common_status.triggered and common_status.triggered != prev_common_triggered:
+                if common_status.triggered == "thumbs_up":
+                    log_event("thumbs_up", "Thumbs Up")
+                elif common_status.triggered == "thumbs_down":
+                    log_event("thumbs_down", "Thumbs Down")
+
+            prev_cursor_active = cursor_status.active
+            prev_mouse_down = cursor_status.mouse_down
+            prev_double_click = cursor_status.double_click
+            prev_triple_click = cursor_status.triple_click
+            prev_media_triggered = media_status.triggered
+            prev_common_triggered = common_status.triggered
 
             cv2.imshow(win_name, frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
