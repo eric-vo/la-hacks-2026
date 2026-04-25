@@ -11,67 +11,128 @@
     "F",
     "G",
     "H",
-    "I"
+    "I",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y"
   ],
-  "stage1_accuracy": 1.0,
+  "stage1_accuracy": 0.9895833333333334,
   "group_to_letters": {
     "G1": [
       "A",
-      "E"
+      "E",
+      "S",
+      "T"
     ],
     "G2": [
       "B",
       "C",
-      "D"
+      "D",
+      "O"
+    ],
+    "G3": [
+      "R",
+      "U",
+      "V"
     ],
     "G4": [
-      "F"
+      "F",
+      "W"
     ],
     "G5": [
-      "I"
+      "I",
+      "L",
+      "Y"
+    ],
+    "G6": [
+      "K",
+      "P",
+      "Q",
+      "X"
     ],
     "G7": [
       "G",
-      "H"
+      "H",
+      "M",
+      "N"
     ]
   },
   "group_reports": {
     "G1": {
-      "sample_count": 40,
+      "sample_count": 80,
       "letters": [
         "A",
-        "E"
+        "E",
+        "S",
+        "T"
       ],
-      "accuracy": 1.0
+      "accuracy": 0.9375
     },
     "G2": {
-      "sample_count": 60,
+      "sample_count": 80,
       "letters": [
         "B",
         "C",
-        "D"
+        "D",
+        "O"
+      ],
+      "accuracy": 0.9375
+    },
+    "G3": {
+      "sample_count": 60,
+      "letters": [
+        "R",
+        "U",
+        "V"
+      ],
+      "accuracy": 0.9166666666666666
+    },
+    "G4": {
+      "sample_count": 40,
+      "letters": [
+        "F",
+        "W"
       ],
       "accuracy": 1.0
     },
-    "G4": {
-      "sample_count": 20,
-      "letters": [
-        "F"
-      ],
-      "accuracy": null
-    },
     "G5": {
-      "sample_count": 20,
+      "sample_count": 60,
       "letters": [
-        "I"
+        "I",
+        "L",
+        "Y"
       ],
-      "accuracy": null
+      "accuracy": 1.0
+    },
+    "G6": {
+      "sample_count": 80,
+      "letters": [
+        "K",
+        "P",
+        "Q",
+        "X"
+      ],
+      "accuracy": 1.0
     },
     "G7": {
-      "sample_count": 40,
+      "sample_count": 80,
       "letters": [
         "G",
-        "H"
+        "H",
+        "M",
+        "N"
       ],
       "accuracy": 1.0
     }
