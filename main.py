@@ -78,6 +78,21 @@ def create_hand_landmarker(model_path):
     return vision.HandLandmarker.create_from_options(options)
 
 
+def landmark_color(index):
+    # BGR colors by anatomical group for easier visual debugging.
+    if index == 0:
+        return (255, 255, 255)  # wrist
+    if 1 <= index <= 4:
+        return (0, 165, 255)  # thumb
+    if 5 <= index <= 8:
+        return (0, 255, 255)  # index
+    if 9 <= index <= 12:
+        return (0, 255, 0)  # middle
+    if 13 <= index <= 16:
+        return (255, 140, 0)  # ring
+    return (255, 0, 255)  # pinky (17-20)
+
+
 def draw_hand_landmarks(frame, landmarks):
     height, width = frame.shape[:2]
 
@@ -88,9 +103,20 @@ def draw_hand_landmarks(frame, landmarks):
         x2, y2 = int(p2.x * width), int(p2.y * height)
         cv2.line(frame, (x1, y1), (x2, y2), (90, 180, 255), 2)
 
-    for lm in landmarks:
+    for idx, lm in enumerate(landmarks):
         x, y = int(lm.x * width), int(lm.y * height)
-        cv2.circle(frame, (x, y), 4, (0, 220, 80), -1)
+        color = landmark_color(idx)
+        cv2.circle(frame, (x, y), 4, color, -1)
+        cv2.putText(
+            frame,
+            str(idx),
+            (x + 6, y - 6),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.35,
+            color,
+            1,
+            cv2.LINE_AA,
+        )
 
 
 @dataclass
