@@ -31,7 +31,6 @@ _latest_state: dict = {
     "pinch_ratio": None,
     "mouse_down": False,
     "double_click": False,
-    "triple_click": False,
     "media_gesture": False,
     "media_triggered": False,
 }
@@ -98,7 +97,6 @@ def _camera_loop():
     prev_cursor_active = False
     prev_mouse_down = False
     prev_double_click = False
-    prev_triple_click = False
     prev_media_triggered = False
 
     try:
@@ -130,15 +128,12 @@ def _camera_loop():
                 log_event("single_click", "Single Click")
             if cursor_status.double_click and not prev_double_click:
                 log_event("double_click", "Double Click")
-            if cursor_status.triple_click and not prev_triple_click:
-                log_event("triple_click", "Triple Click")
             if media_status.triggered and not prev_media_triggered:
                 log_event("media_play_pause", "Play / Pause")
 
             prev_cursor_active   = cursor_status.active
             prev_mouse_down      = cursor_status.mouse_down
             prev_double_click    = cursor_status.double_click
-            prev_triple_click    = cursor_status.triple_click
             prev_media_triggered = bool(media_status.triggered)
 
             # Encode and store latest frame.
@@ -153,7 +148,6 @@ def _camera_loop():
                     "pinch_ratio":     cursor_status.pinch_ratio,
                     "mouse_down":      cursor_status.mouse_down,
                     "double_click":    cursor_status.double_click,
-                    "triple_click":    cursor_status.triple_click,
                     "media_gesture":   media_status.gesture_detected,
                     "media_triggered": bool(media_status.triggered),
                 })

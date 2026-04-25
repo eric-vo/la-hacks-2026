@@ -60,7 +60,8 @@ CURSOR_FREEZE_THRESHOLD = 0.45
 
 # Multi-click: successive pinch-downs within this many frames of the last release.
 MULTI_CLICK_WINDOW_FRAMES = 15
-DRAG_START_THRESHOLD_FRAMES = 3
+DRAG_START_THRESHOLD_FRAMES = 4
+CLICK_FREEZE_FRAMES = 5  # Number of frames to freeze the cursor
 
 # Frames each click label stays visible (~0.83 s at 30 fps).
 DOUBLE_CLICK_FLASH_FRAMES = 25
@@ -79,6 +80,7 @@ class CursorState:
     )  # -1 = no recent click; ≥0 = frames since last mouseUp
     click_sequence: int = 0  # clicks completed in the current rapid sequence (0-1)
     double_click_flash_frames: int = 0
+    freeze_frames_remaining: int = 0  # Counter for freeze frames
     smooth_x: float | None = None
     smooth_y: float | None = None
     sent_x: float | None = None
@@ -177,12 +179,19 @@ class CursorControlFeature:
         if self.state.double_click_flash_frames > 0:
             self.state.double_click_flash_frames -= 1
 
+        # Advance click freeze counter (frames remaining it's frozen).
+        if self.state.freeze_frames_remaining > 0:
+            self.state.freeze_frames_remaining -= 1
+
         self._update_activation_state(thumb_index_close, support_folded)
         pinch_approaching = (
             pinch_ratio is not None and pinch_ratio < CURSOR_FREEZE_THRESHOLD
         )
-        # Allow movement while dragging; only freeze during pre-click approach.
-        if self.state.mouse_down or (not pinch_approaching):
+        # Allow movement only when not frozen from a recent click, and when
+        # either dragging or not in the pre-click approach.
+        if self.state.freeze_frames_remaining == 0 and (
+            self.state.mouse_down or (not pinch_approaching)
+        ):
             self._update_cursor_position(cursor_x, cursor_y)
         self._update_mouse_button(pinch_ratio)
 
@@ -282,6 +291,8 @@ class CursorControlFeature:
                 if self.state.click_sequence == 0:
                     pyautogui.mouseDown()
                     self.state.mouse_down = True
+                    # Freeze cursor movement briefly to avoid drift during the click
+                    self.state.freeze_frames_remaining = CLICK_FREEZE_FRAMES
             return
 
         # --- PINCH UP (RELEASE) DETECTED ---
@@ -298,6 +309,8 @@ class CursorControlFeature:
                     # Handle the sequence logic
                     if self.state.click_sequence == 2:
                         pyautogui.doubleClick()
+                        # Freeze cursor movement briefly after the click
+                        self.state.freeze_frames_remaining = CLICK_FREEZE_FRAMES
                         self.state.double_click_flash_frames = DOUBLE_CLICK_FLASH_FRAMES
                         self._reset_after_action()
                 else:
@@ -305,6 +318,8 @@ class CursorControlFeature:
                     if self.state.mouse_down:
                         pyautogui.mouseUp()
                         self.state.mouse_down = False
+                        # Freeze cursor movement briefly after releasing
+                        self.state.freeze_frames_remaining = CLICK_FREEZE_FRAMES
                     self._reset_after_action()
 
             self.state.pinch_down_frames = 0
