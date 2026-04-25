@@ -286,5 +286,359 @@
     "timestamp": "2026-04-25T06:52:57.063727",
     "type": "cursor_off",
     "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 49,
+    "timestamp": "2026-04-25T08:09:19.468801",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 50,
+    "timestamp": "2026-04-25T08:09:21.485021",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 51,
+    "timestamp": "2026-04-25T08:09:27.197239",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 52,
+    "timestamp": "2026-04-25T08:09:31.626324",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 53,
+    "timestamp": "2026-04-25T08:09:39.965169",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 54,
+    "timestamp": "2026-04-25T08:09:43.154243",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 55,
+    "timestamp": "2026-04-25T08:09:45.623789",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 56,
+    "timestamp": "2026-04-25T08:09:45.661544",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 57,
+    "timestamp": "2026-04-25T08:09:48.689782",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 58,
+    "timestamp": "2026-04-25T08:09:50.706788",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 59,
+    "timestamp": "2026-04-25T08:09:59.582709",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 60,
+    "timestamp": "2026-04-25T08:10:06.382970",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 61,
+    "timestamp": "2026-04-25T08:10:07.359416",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 62,
+    "timestamp": "2026-04-25T08:10:09.935586",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 63,
+    "timestamp": "2026-04-25T08:10:10.895666",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 64,
+    "timestamp": "2026-04-25T08:10:30.832225",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 65,
+    "timestamp": "2026-04-25T08:10:38.290697",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 66,
+    "timestamp": "2026-04-25T08:10:39.907107",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 67,
+    "timestamp": "2026-04-25T08:10:41.507399",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 68,
+    "timestamp": "2026-04-25T08:10:43.328760",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 69,
+    "timestamp": "2026-04-25T08:10:46.834290",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 70,
+    "timestamp": "2026-04-25T08:10:50.019260",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 71,
+    "timestamp": "2026-04-25T08:10:53.302324",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 72,
+    "timestamp": "2026-04-25T08:10:54.196611",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 73,
+    "timestamp": "2026-04-25T08:10:55.369279",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 74,
+    "timestamp": "2026-04-25T08:10:58.214882",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 75,
+    "timestamp": "2026-04-25T08:10:59.614841",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 76,
+    "timestamp": "2026-04-25T08:11:00.772289",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 77,
+    "timestamp": "2026-04-25T08:11:00.806537",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 78,
+    "timestamp": "2026-04-25T08:11:02.089998",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 79,
+    "timestamp": "2026-04-25T08:11:06.448874",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 80,
+    "timestamp": "2026-04-25T08:11:10.293584",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 81,
+    "timestamp": "2026-04-25T08:11:11.704618",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 82,
+    "timestamp": "2026-04-25T08:11:14.234284",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 83,
+    "timestamp": "2026-04-25T08:11:20.787482",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 84,
+    "timestamp": "2026-04-25T08:11:22.532916",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 85,
+    "timestamp": "2026-04-25T08:11:24.036177",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 86,
+    "timestamp": "2026-04-25T08:11:27.811178",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 87,
+    "timestamp": "2026-04-25T08:11:28.026682",
+    "type": "thumbs_up",
+    "label": "Thumbs Up"
+  },
+  {
+    "id": 88,
+    "timestamp": "2026-04-25T08:11:33.414274",
+    "type": "thumbs_down",
+    "label": "Thumbs Down"
+  },
+  {
+    "id": 89,
+    "timestamp": "2026-04-25T08:12:36.136278",
+    "type": "thumbs_down",
+    "label": "Thumbs Down"
+  },
+  {
+    "id": 90,
+    "timestamp": "2026-04-25T08:12:47.272861",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 91,
+    "timestamp": "2026-04-25T08:12:53.945534",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 92,
+    "timestamp": "2026-04-25T08:12:53.952733",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 93,
+    "timestamp": "2026-04-25T08:12:56.280740",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 94,
+    "timestamp": "2026-04-25T08:12:56.859646",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 95,
+    "timestamp": "2026-04-25T08:12:56.866189",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 96,
+    "timestamp": "2026-04-25T08:13:02.650436",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 97,
+    "timestamp": "2026-04-25T08:13:43.137367",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 98,
+    "timestamp": "2026-04-25T08:13:55.089042",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 99,
+    "timestamp": "2026-04-25T08:14:02.122953",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 100,
+    "timestamp": "2026-04-25T08:14:03.495613",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 101,
+    "timestamp": "2026-04-25T08:14:04.834272",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 102,
+    "timestamp": "2026-04-25T08:14:05.474347",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 103,
+    "timestamp": "2026-04-25T08:14:05.974231",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 104,
+    "timestamp": "2026-04-25T08:14:07.751993",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 105,
+    "timestamp": "2026-04-25T08:14:19.001336",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 106,
+    "timestamp": "2026-04-25T08:14:22.462094",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 107,
+    "timestamp": "2026-04-25T08:14:25.220792",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
   }
 ]
