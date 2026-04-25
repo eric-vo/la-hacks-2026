@@ -20,6 +20,13 @@ __pycache__/
 *.task
 *.tflite
 
+# Node
+node_modules/
+frontend/dist/
+
+# Runtime-generated files
+frontend/public/events.json
+
 # Misc
 .DS_Store
 *.egg-info/
