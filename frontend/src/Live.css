@@ -172,9 +172,3 @@
 }
 .click-active { color: #f85149; }
 
-/* ── Gesture label ── */
-.gesture-label {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #e6edf3;
-}

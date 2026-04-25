@@ -196,7 +196,6 @@ def main():
     hand_landmarker = create_hand_landmarker(model_path)
     cursor_feature = CursorControlFeature()
     media_feature = MediaControlFeature()
-
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         raise RuntimeError("Could not open camera.")

@@ -95,6 +95,7 @@ export default function Live() {
               labelOff={state.media_gesture ? 'Holding open palm…' : 'Ready'}
             />
           </Panel>
+
         </div>
       </div>
     </div>
