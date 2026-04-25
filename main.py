@@ -2,6 +2,9 @@ import os
 import time
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import cv2
 import mediapipe as mp
 from mediapipe.tasks import python as mp_python

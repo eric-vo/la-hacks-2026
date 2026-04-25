@@ -1,0 +1,28 @@
+# Environment variables — never commit real keys
+.env
+.env.local
+.env.*.local
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# MediaPipe / ML model files (large binaries)
+*.task
+*.tflite
+
+# Misc
+.DS_Store
+*.egg-info/
+dist/
+build/
+.pytest_cache/
