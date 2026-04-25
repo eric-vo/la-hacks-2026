@@ -160,7 +160,10 @@ class CursorControlFeature:
         if self.state.smooth_x is None:
             self.state.smooth_x, self.state.smooth_y = tx, ty
             pyautogui.moveTo(self.state.smooth_x, self.state.smooth_y)
-            self.state.sent_x, self.state.sent_y = self.state.smooth_x, self.state.smooth_y
+            self.state.sent_x, self.state.sent_y = (
+                self.state.smooth_x,
+                self.state.smooth_y,
+            )
             return
 
         dx = tx - self.state.smooth_x
@@ -174,7 +177,8 @@ class CursorControlFeature:
         # Move faster for large motions, smoother for small motions.
         adaptive_alpha = min(
             ADAPTIVE_ALPHA_MAX,
-            SMOOTH_ALPHA_BASE + ADAPTIVE_ALPHA_GAIN * min(dist / ADAPTIVE_DIST_SCALE, 1.0),
+            SMOOTH_ALPHA_BASE
+            + ADAPTIVE_ALPHA_GAIN * min(dist / ADAPTIVE_DIST_SCALE, 1.0),
         )
         self.state.smooth_x = (
             adaptive_alpha * tx + (1.0 - adaptive_alpha) * self.state.smooth_x

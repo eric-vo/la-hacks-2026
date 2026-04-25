@@ -180,7 +180,9 @@ def main():
             timestamp_ms = int(time.monotonic() * 1000)
             hand_result = hand_landmarker.detect_for_video(mp_image, timestamp_ms)
 
-            landmarks = hand_result.hand_landmarks[0] if hand_result.hand_landmarks else None
+            landmarks = (
+                hand_result.hand_landmarks[0] if hand_result.hand_landmarks else None
+            )
             if landmarks:
                 draw_hand_landmarks(frame, landmarks)
 
