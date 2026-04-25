@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 
-from features.asl_typing.constants import (
+from constants import (
     ASL_LETTERS,
     FEATURE_VECTOR_SIZE,
     LANDMARKS_CSV,
@@ -53,13 +53,26 @@ def load_dataset(csv_path):
 
 
 def train_and_report(model, x, y, test_size):
+    # Use the largest valid k for this specific subset to support partial datasets.
+    effective_k = max(1, min(model.n_neighbors, len(y)))
+    model.set_params(n_neighbors=effective_k)
+
     if len(np.unique(y)) < 2 or len(y) < 10:
         model.fit(x, y)
         return None
 
-    x_train, x_test, y_train, y_test = train_test_split(
-        x, y, test_size=test_size, random_state=42, stratify=y
-    )
+    try:
+        x_train, x_test, y_train, y_test = train_test_split(
+            x, y, test_size=test_size, random_state=42, stratify=y
+        )
+    except ValueError:
+        # Fallback for sparse labels where stratified split is impossible.
+        model.fit(x, y)
+        return None
+
+    # Re-check k after split because train size may be smaller than full size.
+    effective_k_train = max(1, min(model.n_neighbors, len(y_train)))
+    model.set_params(n_neighbors=effective_k_train)
     model.fit(x_train, y_train)
     return model.score(x_test, y_test)
 
@@ -68,6 +81,7 @@ def main():
     args = parse_args()
 
     x, letters = load_dataset(LANDMARKS_CSV)
+    trained_letters = sorted(set(letters.tolist()))
     groups = np.asarray([LETTER_TO_GROUP[label] for label in letters])
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
@@ -98,6 +112,7 @@ def main():
         "k": args.k,
         "feature_size": FEATURE_VECTOR_SIZE,
         "dataset_path": str(LANDMARKS_CSV),
+        "trained_letters": trained_letters,
         "stage1_accuracy": None if stage1_acc is None else float(stage1_acc),
         "group_to_letters": {
             group: sorted(letters_set)
@@ -108,6 +123,7 @@ def main():
     MODEL_METADATA_PATH.write_text(json.dumps(metadata, indent=2))
 
     print("Saved models to:", MODELS_DIR)
+    print("Trained letters:", ",".join(trained_letters))
     if stage1_acc is not None:
         print(f"Stage-1 group accuracy: {stage1_acc:.3f}")
     print("Group reports:")

@@ -1,0 +1,79 @@
+{
+  "k": 5,
+  "feature_size": 63,
+  "dataset_path": "/Users/ericvo/Desktop/LA Hacks/aslpc/features/asl_typing/data/landmarks.csv",
+  "trained_letters": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I"
+  ],
+  "stage1_accuracy": 1.0,
+  "group_to_letters": {
+    "G1": [
+      "A",
+      "E"
+    ],
+    "G2": [
+      "B",
+      "C",
+      "D"
+    ],
+    "G4": [
+      "F"
+    ],
+    "G5": [
+      "I"
+    ],
+    "G7": [
+      "G",
+      "H"
+    ]
+  },
+  "group_reports": {
+    "G1": {
+      "sample_count": 40,
+      "letters": [
+        "A",
+        "E"
+      ],
+      "accuracy": 1.0
+    },
+    "G2": {
+      "sample_count": 60,
+      "letters": [
+        "B",
+        "C",
+        "D"
+      ],
+      "accuracy": 1.0
+    },
+    "G4": {
+      "sample_count": 20,
+      "letters": [
+        "F"
+      ],
+      "accuracy": null
+    },
+    "G5": {
+      "sample_count": 20,
+      "letters": [
+        "I"
+      ],
+      "accuracy": null
+    },
+    "G7": {
+      "sample_count": 40,
+      "letters": [
+        "G",
+        "H"
+      ],
+      "accuracy": 1.0
+    }
+  }
+}

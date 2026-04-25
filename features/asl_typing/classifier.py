@@ -13,6 +13,7 @@ class AslHierarchicalClassifier:
         self.stage1 = None
         self.group_models = {}
         self.group_labels = {}
+        self.trained_letters = []
 
     def load(self):
         if not STAGE1_MODEL_PATH.exists() or not MODEL_METADATA_PATH.exists():
@@ -22,6 +23,7 @@ class AslHierarchicalClassifier:
         self.stage1 = joblib.load(STAGE1_MODEL_PATH)
         metadata = json.loads(MODEL_METADATA_PATH.read_text())
         self.group_labels = metadata.get("group_to_letters", {})
+        self.trained_letters = metadata.get("trained_letters", [])
 
         group_models = {}
         for model_path in MODELS_DIR.glob("group_*.joblib"):

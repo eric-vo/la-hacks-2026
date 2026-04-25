@@ -1,6 +1,6 @@
 import math
 
-from constants import INDEX_MCP, MIDDLE_MCP, PINKY_MCP, WRIST
+from .constants import INDEX_MCP, MIDDLE_MCP, PINKY_MCP, WRIST
 
 
 def _distance(a, b):
