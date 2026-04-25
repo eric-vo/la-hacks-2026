@@ -40,8 +40,6 @@ LETTER_TO_GROUP = {
     "C": "G2",
     "D": "G2",
     "O": "G2",
-    "V": "G3",
-    "U": "G3",
     "R": "G3",
     "W": "G4",
     "F": "G4",
@@ -57,8 +55,12 @@ LETTER_TO_GROUP = {
     "G": "G7",
     "H": "G7",
     "J": "G7",
-    "M": "G7",
-    "N": "G7",
+    # Separate M/N into their own group
+    "M": "G8",
+    "N": "G8",
+    # Separate U and V into distinct groups
+    "U": "G9",
+    "V": "G10",
 }
 
 # Ensure every letter has a group assignment.

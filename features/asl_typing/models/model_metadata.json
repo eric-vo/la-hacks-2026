@@ -1,5 +1,5 @@
 {
-  "k": 5,
+  "k": 1,
   "feature_size": 63,
   "dataset_path": "/Users/ericvo/Desktop/LA Hacks/aslpc/features/asl_typing/data/landmarks.csv",
   "trained_letters": [
@@ -28,13 +28,16 @@
     "X",
     "Y"
   ],
-  "stage1_accuracy": 0.9895833333333334,
+  "stage1_accuracy": 0.952054794520548,
   "group_to_letters": {
     "G1": [
       "A",
       "E",
       "S",
       "T"
+    ],
+    "G10": [
+      "V"
     ],
     "G2": [
       "B",
@@ -43,9 +46,7 @@
       "O"
     ],
     "G3": [
-      "R",
-      "U",
-      "V"
+      "R"
     ],
     "G4": [
       "F",
@@ -64,40 +65,50 @@
     ],
     "G7": [
       "G",
-      "H",
+      "H"
+    ],
+    "G8": [
       "M",
       "N"
+    ],
+    "G9": [
+      "U"
     ]
   },
   "group_reports": {
     "G1": {
-      "sample_count": 80,
+      "sample_count": 100,
       "letters": [
         "A",
         "E",
         "S",
         "T"
       ],
-      "accuracy": 0.9375
+      "accuracy": 1.0
+    },
+    "G10": {
+      "sample_count": 40,
+      "letters": [
+        "V"
+      ],
+      "accuracy": null
     },
     "G2": {
-      "sample_count": 80,
+      "sample_count": 100,
       "letters": [
         "B",
         "C",
         "D",
         "O"
       ],
-      "accuracy": 0.9375
+      "accuracy": 1.0
     },
     "G3": {
-      "sample_count": 60,
+      "sample_count": 20,
       "letters": [
-        "R",
-        "U",
-        "V"
+        "R"
       ],
-      "accuracy": 0.9166666666666666
+      "accuracy": null
     },
     "G4": {
       "sample_count": 40,
@@ -127,14 +138,27 @@
       "accuracy": 1.0
     },
     "G7": {
-      "sample_count": 80,
+      "sample_count": 40,
       "letters": [
         "G",
-        "H",
+        "H"
+      ],
+      "accuracy": 1.0
+    },
+    "G8": {
+      "sample_count": 210,
+      "letters": [
         "M",
         "N"
       ],
-      "accuracy": 1.0
+      "accuracy": 0.9285714285714286
+    },
+    "G9": {
+      "sample_count": 40,
+      "letters": [
+        "U"
+      ],
+      "accuracy": null
     }
   }
 }
