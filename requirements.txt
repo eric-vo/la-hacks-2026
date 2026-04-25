@@ -1,4 +1,5 @@
 mediapipe
 opencv-python
 pyautogui
+pynput
 python-dotenv

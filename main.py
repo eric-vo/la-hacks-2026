@@ -1,7 +1,6 @@
 import os
 import time
 from pathlib import Path
-
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -11,6 +10,7 @@ from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
 from features.cursor_control import CursorControlFeature
+from features.media_control import MediaControlFeature
 
 
 # Landmark indices in MediaPipe Hands.
@@ -119,7 +119,7 @@ def draw_hand_landmarks(frame, landmarks):
         )
 
 
-def draw_status_overlay(frame, cursor_status):
+def draw_status_overlay(frame, cursor_status, media_status):
     mode_text = "Mouse Control: ON" if cursor_status.active else "Mouse Control: OFF"
     color = (40, 220, 40) if cursor_status.active else (50, 50, 220)
     cv2.putText(frame, mode_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
@@ -134,6 +134,17 @@ def draw_status_overlay(frame, cursor_status):
             (255, 255, 255),
             2,
         )
+
+    if media_status.cooldown_active:
+        media_label = "Open Palm: cooldown"
+        media_color = (180, 180, 50)
+    elif media_status.gesture_detected:
+        media_label = "Open Palm: holding..."
+        media_color = (50, 200, 255)
+    else:
+        media_label = "Open Palm: ready"
+        media_color = (130, 130, 130)
+    cv2.putText(frame, media_label, (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, media_color, 2)
 
     cv2.putText(
         frame,
@@ -161,11 +172,26 @@ def draw_status_overlay(frame, cursor_status):
             cv2.LINE_AA,
         )
 
+    # Flash "PLAY/PAUSE" when the gesture fires
+    if media_status.triggered:
+        h, w = frame.shape[:2]
+        cv2.putText(
+            frame,
+            "PLAY/PAUSE",
+            (w // 2 - 100, h // 2 - 60),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.4,
+            (50, 200, 255),
+            3,
+            cv2.LINE_AA,
+        )
+
 
 def main():
     model_path = resolve_model_path()
     hand_landmarker = create_hand_landmarker(model_path)
     cursor_feature = CursorControlFeature()
+    media_feature = MediaControlFeature()
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -190,7 +216,8 @@ def main():
                 draw_hand_landmarks(frame, landmarks)
 
             cursor_status = cursor_feature.process_landmarks(landmarks)
-            draw_status_overlay(frame, cursor_status)
+            media_status = media_feature.process_landmarks(landmarks)
+            draw_status_overlay(frame, cursor_status, media_status)
 
             cv2.imshow("Hand Mouse Control", frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
