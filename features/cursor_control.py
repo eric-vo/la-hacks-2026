@@ -20,13 +20,12 @@ MIDDLE_MCP = 9
 RING_MCP = 13
 PINKY_MCP = 17
 
-# Index tip-to-MCP distance must exceed this fraction of palm_size to count as extended.
-# 0.5 prevents a loosely-curled fist (e.g. thumbs-up) from falsely triggering cursor mode.
-INDEX_EXTENSION_RATIO = 0.5
-
 # Support finger (middle/ring/pinky) tip-to-MCP must be below this fraction of palm_size
 # to count as folded — direction-independent.
 FINGER_FOLDED_RATIO = 0.6
+
+# Activation requires thumb/index tips to be close (relative to palm size).
+ACTIVATION_PINCH_RATIO_THRESHOLD = 0.9
 
 # Cursor mapping constants.
 # 0.60 gives ~4x screen amplification vs the previous 0.45 (~6.7x), reducing jitter.
@@ -47,8 +46,8 @@ JITTER_DEADZONE_PX = 8.0
 SEND_THRESHOLD_PX = 1.6
 
 # ~600 ms hold to activate; ~500 ms without gesture to deactivate (at 30 fps).
-ACTIVATE_REQUIRED_FRAMES = 18
-DEACTIVATE_REQUIRED_FRAMES = 15
+ACTIVATE_REQUIRED_FRAMES = 10
+DEACTIVATE_REQUIRED_FRAMES = 10
 
 # Pinch click: thumb-tip to index-tip distance relative to palm size.
 # Wider hysteresis band avoids accidental re-triggers at the boundary.
@@ -61,7 +60,7 @@ CURSOR_FREEZE_THRESHOLD = 0.45
 
 # Multi-click: successive pinch-downs within this many frames of the last release.
 MULTI_CLICK_WINDOW_FRAMES = 15
-DRAG_START_THRESHOLD_FRAMES = 4
+DRAG_START_THRESHOLD_FRAMES = 3
 
 # Frames each click label stays visible (~0.83 s at 30 fps).
 DOUBLE_CLICK_FLASH_FRAMES = 25
@@ -107,15 +106,8 @@ def palm_size(landmarks):
     )
 
 
-def _index_extended(landmarks) -> bool:
-    """Index finger extended in any direction; middle, ring, pinky folded."""
-    psize = palm_size(landmarks)
-    index_extended = (
-        euclidean(landmarks[INDEX_TIP], landmarks[INDEX_MCP]) / psize
-        > INDEX_EXTENSION_RATIO
-    )
-    support_folded = _support_fingers_folded(landmarks, psize)
-    return index_extended and support_folded
+def _thumb_index_close(pinch_ratio) -> bool:
+    return pinch_ratio is not None and pinch_ratio < ACTIVATION_PINCH_RATIO_THRESHOLD
 
 
 def _support_fingers_folded(landmarks, psize=None) -> bool:
@@ -152,15 +144,15 @@ def extract_landmark_features(landmarks):
     if not landmarks:
         return False, False, None, None, None
 
-    index_up = _index_extended(landmarks)
     support_folded = _support_fingers_folded(landmarks)
     psize = palm_size(landmarks)
     index_tip = landmarks[INDEX_TIP]
     thumb_tip = landmarks[THUMB_TIP]
     pinch_ratio = euclidean(thumb_tip, index_tip) / psize
+    thumb_index_close = _thumb_index_close(pinch_ratio)
     cursor_x = INDEX_WEIGHT * index_tip.x + THUMB_WEIGHT * thumb_tip.x
     cursor_y = INDEX_WEIGHT * index_tip.y + THUMB_WEIGHT * thumb_tip.y
-    return index_up, support_folded, pinch_ratio, cursor_x, cursor_y
+    return thumb_index_close, support_folded, pinch_ratio, cursor_x, cursor_y
 
 
 class CursorControlFeature:
@@ -171,7 +163,7 @@ class CursorControlFeature:
         self.state = CursorState()
 
     def process_landmarks(self, landmarks):
-        index_up, support_folded, pinch_ratio, cursor_x, cursor_y = (
+        thumb_index_close, support_folded, pinch_ratio, cursor_x, cursor_y = (
             extract_landmark_features(landmarks)
         )
 
@@ -185,7 +177,7 @@ class CursorControlFeature:
         if self.state.double_click_flash_frames > 0:
             self.state.double_click_flash_frames -= 1
 
-        self._update_activation_state(index_up, support_folded)
+        self._update_activation_state(thumb_index_close, support_folded)
         pinch_approaching = (
             pinch_ratio is not None and pinch_ratio < CURSOR_FREEZE_THRESHOLD
         )
@@ -206,9 +198,9 @@ class CursorControlFeature:
             pyautogui.mouseUp()
             self.state.mouse_down = False
 
-    def _update_activation_state(self, index_up, support_folded):
+    def _update_activation_state(self, thumb_index_close, support_folded):
         if not self.state.active:
-            if index_up:
+            if thumb_index_close and support_folded:
                 self.state.activation_frames += 1
                 self.state.deactivation_frames = 0
                 if self.state.activation_frames >= ACTIVATE_REQUIRED_FRAMES:
@@ -219,7 +211,7 @@ class CursorControlFeature:
         else:
             # While active, only check the support fingers so that pinching
             # (which bends the index inward) does not accidentally deactivate.
-            if support_folded:
+            if thumb_index_close and support_folded:
                 self.state.deactivation_frames = 0
             else:
                 self.state.deactivation_frames += 1
