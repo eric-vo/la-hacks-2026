@@ -25,6 +25,8 @@ WRIST = 0
 INDEX_MCP = 5
 PINKY_MCP = 17
 
+LOBSTER_GRIP_RATIO_THRESHOLD = 0.6
+
 
 # MediaPipe hand landmark graph (21 points) connections.
 HAND_CONNECTIONS = [
@@ -80,15 +82,15 @@ def create_hand_landmarker(model_path):
 
 def landmark_color(index):
     # BGR colors by anatomical group for easier visual debugging.
-    if index == 0:
+    if index == WRIST:
         return (255, 255, 255)  # wrist
-    if 1 <= index <= 4:
+    if 1 <= index <= THUMB_TIP:
         return (0, 165, 255)  # thumb
-    if 5 <= index <= 8:
+    if 5 <= index <= INDEX_PIP:
         return (0, 255, 255)  # index
-    if 9 <= index <= 12:
+    if 9 <= index <= MIDDLE_TIP:
         return (0, 255, 0)  # middle
-    if 13 <= index <= 16:
+    if 13 <= index <= RING_TIP:
         return (255, 140, 0)  # ring
     return (255, 0, 255)  # pinky (17-20)
 
@@ -129,6 +131,8 @@ class MouseState:
     mouse_down: bool = False
     smooth_x: float | None = None
     smooth_y: float | None = None
+    sent_x: float | None = None
+    sent_y: float | None = None
 
 
 def euclidean(a, b):
@@ -188,7 +192,8 @@ def extract_gesture_data(hand_result, frame):
     grip_ratio = thumb_index_dist / psize
 
     data.pinch_ratio = grip_ratio
-    data.lobster_pose = others_folded and (grip_ratio < 0.45)
+
+    data.lobster_pose = others_folded and (grip_ratio < LOBSTER_GRIP_RATIO_THRESHOLD)
     data.weighted_x = 0.60 * index_tip.x + 0.40 * thumb_tip.x
     data.weighted_y = 0.60 * index_tip.y + 0.40 * thumb_tip.y
     return data
@@ -211,7 +216,14 @@ def update_activation_state(
 
 
 def update_cursor_position(
-    state, weighted_x, weighted_y, screen_w, screen_h, smooth_alpha
+    state,
+    weighted_x,
+    weighted_y,
+    screen_w,
+    screen_h,
+    smooth_alpha,
+    jitter_deadzone_px,
+    send_threshold_px,
 ):
     if not state.active or (weighted_x is None) or (weighted_y is None):
         return
@@ -219,11 +231,31 @@ def update_cursor_position(
     tx, ty = map_to_screen(weighted_x, weighted_y, screen_w, screen_h)
     if state.smooth_x is None:
         state.smooth_x, state.smooth_y = tx, ty
+        pyautogui.moveTo(state.smooth_x, state.smooth_y)
+        state.sent_x, state.sent_y = state.smooth_x, state.smooth_y
     else:
-        state.smooth_x = smooth_alpha * tx + (1.0 - smooth_alpha) * state.smooth_x
-        state.smooth_y = smooth_alpha * ty + (1.0 - smooth_alpha) * state.smooth_y
+        dx = tx - state.smooth_x
+        dy = ty - state.smooth_y
+        dist = math.hypot(dx, dy)
+
+        # Ignore tiny frame-to-frame motion so a still hand stays still.
+        if dist < jitter_deadzone_px:
+            return
+
+        # Move faster for large motions, smoother for small motions.
+        adaptive_alpha = min(0.88, smooth_alpha + 0.55 * min(dist / 180.0, 1.0))
+        state.smooth_x = adaptive_alpha * tx + (1.0 - adaptive_alpha) * state.smooth_x
+        state.smooth_y = adaptive_alpha * ty + (1.0 - adaptive_alpha) * state.smooth_y
+
+    if (state.sent_x is not None) and (state.sent_y is not None):
+        if (
+            math.hypot(state.smooth_x - state.sent_x, state.smooth_y - state.sent_y)
+            < send_threshold_px
+        ):
+            return
 
     pyautogui.moveTo(state.smooth_x, state.smooth_y)
+    state.sent_x, state.sent_y = state.smooth_x, state.smooth_y
 
 
 def update_mouse_button(
@@ -286,6 +318,22 @@ def draw_status_overlay(frame, state, pinch_ratio):
         1,
     )
 
+    # Draw click indicator if mouse is down
+    if state.mouse_down:
+        h, w = frame.shape[:2]
+        cx, cy = w // 2, h // 2
+        cv2.circle(frame, (cx, cy), 40, (0, 0, 255), 4)
+        cv2.putText(
+            frame,
+            "CLICK",
+            (cx - 35, cy + 7),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.2,
+            (0, 0, 255),
+            3,
+            cv2.LINE_AA,
+        )
+
 
 def main():
     pyautogui.PAUSE = 0.0
@@ -303,7 +351,7 @@ def main():
     state = MouseState()
 
     # Gesture thresholds in units normalized by palm size.
-    pinch_down_th = 0.20
+    pinch_down_th = 0.24
     pinch_up_th = 0.28
 
     # Debounce/hysteresis to avoid accidental triggers.
@@ -311,8 +359,10 @@ def main():
     deactivate_required_frames = 5
     pinch_required_frames = 2
 
-    # Smoothed cursor update.
-    smooth_alpha = 0.30
+    # Cursor stability tuning.
+    smooth_alpha = 0.20
+    jitter_deadzone_px = 6.0
+    send_threshold_px = 1.6
 
     try:
         while True:
@@ -342,6 +392,8 @@ def main():
                 screen_w,
                 screen_h,
                 smooth_alpha,
+                jitter_deadzone_px,
+                send_threshold_px,
             )
 
             update_mouse_button(
