@@ -11,8 +11,7 @@ import pyautogui
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
-from features.asl_typing import AslTypingFeature, AslTypingStatus
-from features.common_gestures import CommonGesturesFeature, CommonGesturesStatus
+from features.asl_typing import AslTypingFeature
 from features.cursor_control import CursorControlFeature, CursorStatus
 from features.media_control import MediaControlFeature, MediaStatus
 from logger import log_event
@@ -58,7 +57,6 @@ HAND_CONNECTIONS = [
 
 
 def resolve_model_path():
-    # Prefer an explicit env var, then fall back to local model file.
     env_path = os.environ.get("MEDIAPIPE_HAND_MODEL")
     if env_path:
         return Path(env_path).expanduser().resolve()
@@ -84,18 +82,17 @@ def create_hand_landmarker(model_path):
 
 
 def landmark_color(index):
-    # BGR colors by anatomical group for easier visual debugging.
     if index == WRIST:
-        return (255, 255, 255)  # wrist
+        return (255, 255, 255)
     if 1 <= index <= THUMB_TIP:
-        return (0, 165, 255)  # thumb
+        return (0, 165, 255)
     if 5 <= index <= INDEX_PIP:
-        return (0, 255, 255)  # index
+        return (0, 255, 255)
     if 9 <= index <= MIDDLE_TIP:
-        return (0, 255, 0)  # middle
+        return (0, 255, 0)
     if 13 <= index <= RING_TIP:
-        return (255, 140, 0)  # ring
-    return (255, 0, 255)  # pinky (17-20)
+        return (255, 140, 0)
+    return (255, 0, 255)
 
 
 def draw_hand_landmarks(frame, landmarks):
@@ -129,7 +126,6 @@ def draw_status_overlay(
     active_mode,
     cursor_status,
     media_status,
-    common_status,
     typing_status,
 ):
     mode_text = f"Mode: {active_mode.upper()}"
@@ -177,17 +173,6 @@ def draw_status_overlay(
         cv2.FONT_HERSHEY_SIMPLEX,
         0.7,
         media_color,
-        2,
-    )
-
-    gesture_label = f"Common Gesture: {common_status.gesture or 'none'}"
-    cv2.putText(
-        frame,
-        gesture_label,
-        (10, 150),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.7,
-        (200, 200, 200),
         2,
     )
 
@@ -246,7 +231,6 @@ def draw_status_overlay(
         1,
     )
 
-    # Draw click indicator if mouse is down
     if cursor_status.mouse_down:
         h, w = frame.shape[:2]
         cx, cy = w // 2, h // 2
@@ -262,7 +246,6 @@ def draw_status_overlay(
             cv2.LINE_AA,
         )
 
-    # Draw double-click flash indicator
     if cursor_status.double_click:
         h, w = frame.shape[:2]
         cx, cy = w // 2, h // 2
@@ -278,7 +261,6 @@ def draw_status_overlay(
             cv2.LINE_AA,
         )
 
-    # Draw triple-click flash indicator
     if cursor_status.triple_click:
         h, w = frame.shape[:2]
         cx, cy = w // 2, h // 2
@@ -294,7 +276,6 @@ def draw_status_overlay(
             cv2.LINE_AA,
         )
 
-    # Flash "PLAY/PAUSE" when the gesture fires
     if media_status.triggered:
         h, w = frame.shape[:2]
         cv2.putText(
@@ -308,39 +289,12 @@ def draw_status_overlay(
             cv2.LINE_AA,
         )
 
-    # Flash "YES" or "NO" when a common gesture triggers.
-    if common_status.triggered == "thumbs_up":
-        h, w = frame.shape[:2]
-        cv2.putText(
-            frame,
-            "YES",
-            (w // 2 - 45, h // 2 + 90),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.6,
-            (40, 220, 40),
-            3,
-            cv2.LINE_AA,
-        )
-    elif common_status.triggered == "thumbs_down":
-        h, w = frame.shape[:2]
-        cv2.putText(
-            frame,
-            "NO",
-            (w // 2 - 30, h // 2 + 90),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.6,
-            (50, 50, 220),
-            3,
-            cv2.LINE_AA,
-        )
-
 
 def main():
     model_path = resolve_model_path()
     hand_landmarker = create_hand_landmarker(model_path)
     cursor_feature = CursorControlFeature()
     media_feature = MediaControlFeature()
-    common_feature = CommonGesturesFeature()
     typing_feature = AslTypingFeature()
 
     cap = cv2.VideoCapture(0)
@@ -395,11 +349,6 @@ def main():
             else:
                 media_status = MediaStatus()
 
-            if active_mode == "common":
-                common_status = common_feature.process_landmarks(landmarks)
-            else:
-                common_status = CommonGesturesStatus()
-
             typing_status = typing_feature.process_landmarks(
                 landmarks, enabled=(active_mode == "typing")
             )
@@ -409,11 +358,9 @@ def main():
                 active_mode,
                 cursor_status,
                 media_status,
-                common_status,
                 typing_status,
             )
 
-            # Log gesture events on state transitions (once per event, not every frame).
             if cursor_status.active != prev_cursor_active:
                 log_event(
                     "cursor_on" if cursor_status.active else "cursor_off",
@@ -428,14 +375,6 @@ def main():
             if media_status.triggered and not prev_media_triggered:
                 log_event("media_play_pause", "Play / Pause")
             if (
-                common_status.triggered
-                and common_status.triggered != prev_common_triggered
-            ):
-                if common_status.triggered == "thumbs_up":
-                    log_event("thumbs_up", "Thumbs Up")
-                elif common_status.triggered == "thumbs_down":
-                    log_event("thumbs_down", "Thumbs Down")
-            if (
                 typing_status.committed_letter
                 and typing_status.committed_letter != prev_typed_letter
             ):
@@ -448,7 +387,6 @@ def main():
             prev_double_click = cursor_status.double_click
             prev_triple_click = cursor_status.triple_click
             prev_media_triggered = media_status.triggered
-            prev_common_triggered = common_status.triggered
             prev_typed_letter = typing_status.committed_letter
 
             cv2.imshow(win_name, frame)

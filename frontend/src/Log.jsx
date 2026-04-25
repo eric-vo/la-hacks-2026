@@ -5,8 +5,6 @@ const EVENT_CONFIG = {
   single_click:     { label: 'Single Click',    icon: '👆', color: '#f85149' },
   double_click:     { label: 'Double Click',    icon: '👆', color: '#58a6ff', badge: '×2' },
   triple_click:     { label: 'Triple Click',    icon: '👆', color: '#3fb950', badge: '×3' },
-  thumbs_up:        { label: 'Thumbs Up',       icon: '👍', color: '#d29922' },
-  thumbs_down:      { label: 'Thumbs Down',     icon: '👎', color: '#e3702a' },
   media_play_pause: { label: 'Play / Pause',    icon: '⏯️',  color: '#39d2f1' },
   cursor_on:        { label: 'Cursor Mode ON',  icon: '🖱️', color: '#bc8cff' },
   cursor_off:       { label: 'Cursor Mode OFF', icon: '🖱️', color: '#6e7681' },

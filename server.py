@@ -7,7 +7,6 @@ from pathlib import Path
 
 import cv2
 import mediapipe as mp
-import pyautogui
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -17,7 +16,6 @@ from mediapipe.tasks.python import vision
 
 from features.cursor_control import CursorControlFeature
 from features.media_control import MediaControlFeature
-from features.common_gestures import CommonGesturesFeature
 from logger import log_event
 
 load_dotenv()
@@ -36,8 +34,6 @@ _latest_state: dict = {
     "triple_click": False,
     "media_gesture": False,
     "media_triggered": False,
-    "common_gesture": None,
-    "common_triggered": None,
 }
 
 # ── Hand skeleton drawing ─────────────────────────────────────────────────────
@@ -95,7 +91,6 @@ def _camera_loop():
     landmarker = vision.HandLandmarker.create_from_options(options)
     cursor_feature = CursorControlFeature()
     media_feature = MediaControlFeature()
-    common_feature = CommonGesturesFeature()
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -106,7 +101,6 @@ def _camera_loop():
     prev_double_click = False
     prev_triple_click = False
     prev_media_triggered = False
-    prev_common_triggered = None
 
     try:
         while True:
@@ -126,7 +120,6 @@ def _camera_loop():
 
             cursor_status = cursor_feature.process_landmarks(landmarks)
             media_status  = media_feature.process_landmarks(landmarks)
-            common_status = common_feature.process_landmarks(landmarks)
 
             # Log on state transitions only.
             if cursor_status.active != prev_cursor_active:
@@ -142,16 +135,12 @@ def _camera_loop():
                 log_event("triple_click", "Triple Click")
             if media_status.triggered and not prev_media_triggered:
                 log_event("media_play_pause", "Play / Pause")
-            if common_status.triggered and common_status.triggered != prev_common_triggered:
-                log_event(common_status.triggered,
-                          common_status.triggered.replace("_", " ").title())
 
             prev_cursor_active   = cursor_status.active
             prev_mouse_down      = cursor_status.mouse_down
             prev_double_click    = cursor_status.double_click
             prev_triple_click    = cursor_status.triple_click
             prev_media_triggered = bool(media_status.triggered)
-            prev_common_triggered = common_status.triggered
 
             # Encode and store latest frame.
             _, jpg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
@@ -168,8 +157,6 @@ def _camera_loop():
                     "triple_click":    cursor_status.triple_click,
                     "media_gesture":   media_status.gesture_detected,
                     "media_triggered": bool(media_status.triggered),
-                    "common_gesture":  common_status.gesture,
-                    "common_triggered": common_status.triggered,
                 })
     finally:
         cursor_feature.release()
@@ -179,7 +166,7 @@ def _camera_loop():
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     t = threading.Thread(target=_camera_loop, daemon=True)
     t.start()
     yield
@@ -212,7 +199,9 @@ async def websocket(ws: WebSocket):
                 state = dict(_latest_state)
             await ws.send_json(state)
             await asyncio.sleep(0.033)
-    except (WebSocketDisconnect, Exception):
+    except WebSocketDisconnect:
+        pass
+    except Exception:  # noqa: BLE001
         pass
 
 

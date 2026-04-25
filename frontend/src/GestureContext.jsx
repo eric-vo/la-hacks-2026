@@ -10,8 +10,6 @@ const DEFAULT_STATE = {
   triple_click: false,
   media_gesture: false,
   media_triggered: false,
-  common_gesture: null,
-  common_triggered: null,
 }
 
 export function GestureProvider({ children }) {

@@ -45,13 +45,6 @@ export default function Live() {
     ? '🔴 Holding'
     : '—'
 
-  const gestureLabel =
-    state.common_triggered === 'thumbs_up'   ? '👍 Thumbs Up' :
-    state.common_triggered === 'thumbs_down' ? '👎 Thumbs Down' :
-    state.common_gesture   === 'thumbs_up'   ? '👍 (holding…)' :
-    state.common_gesture   === 'thumbs_down' ? '👎 (holding…)' :
-    '—'
-
   return (
     <div className="live-page">
       {/* ── Connection badge ── */}
@@ -80,13 +73,13 @@ export default function Live() {
           <Panel title="Cursor Mode">
             <StatusBadge on={state.cursor_active} labelOn="Active" labelOff="Inactive" />
             <p className="panel-hint">
-              {state.cursor_active ? 'Index finger up to move cursor' : 'Raise index finger to activate'}
+              {state.cursor_active ? 'C-claw grip active — move hand to steer' : 'Raise index finger to activate'}
             </p>
           </Panel>
 
           <Panel title="Pinch">
             <PinchBar ratio={state.pinch_ratio} />
-            <p className="panel-hint">Pinch tightly to click, quick tap for single/double/triple</p>
+            <p className="panel-hint">Quick tap = single click · ×2 = double · ×3 = triple · hold = drag</p>
           </Panel>
 
           <Panel title="Click State">
@@ -101,10 +94,6 @@ export default function Live() {
               labelOn="▶︎ Play / Pause fired"
               labelOff={state.media_gesture ? 'Holding open palm…' : 'Ready'}
             />
-          </Panel>
-
-          <Panel title="Gesture">
-            <span className="gesture-label">{gestureLabel}</span>
           </Panel>
         </div>
       </div>
