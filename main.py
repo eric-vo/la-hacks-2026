@@ -177,6 +177,38 @@ def draw_status_overlay(frame, cursor_status, media_status, common_status):
             cv2.LINE_AA,
         )
 
+    # Draw double-click flash indicator
+    if cursor_status.double_click:
+        h, w = frame.shape[:2]
+        cx, cy = w // 2, h // 2
+        cv2.circle(frame, (cx, cy), 58, (255, 120, 0), 4)
+        cv2.putText(
+            frame,
+            "DOUBLE CLICK",
+            (cx - 90, cy + 7),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.2,
+            (255, 120, 0),
+            3,
+            cv2.LINE_AA,
+        )
+
+    # Draw triple-click flash indicator
+    if cursor_status.triple_click:
+        h, w = frame.shape[:2]
+        cx, cy = w // 2, h // 2
+        cv2.circle(frame, (cx, cy), 74, (0, 200, 0), 4)
+        cv2.putText(
+            frame,
+            "TRIPLE CLICK",
+            (cx - 88, cy + 7),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.2,
+            (0, 200, 0),
+            3,
+            cv2.LINE_AA,
+        )
+
     # Flash "PLAY/PAUSE" when the gesture fires
     if media_status.triggered:
         h, w = frame.shape[:2]
