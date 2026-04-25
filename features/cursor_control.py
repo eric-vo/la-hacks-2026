@@ -189,7 +189,8 @@ class CursorControlFeature:
         pinch_approaching = (
             pinch_ratio is not None and pinch_ratio < CURSOR_FREEZE_THRESHOLD
         )
-        if not self.state.mouse_down and not pinch_approaching:
+        # Allow movement while dragging; only freeze during pre-click approach.
+        if self.state.mouse_down or (not pinch_approaching):
             self._update_cursor_position(cursor_x, cursor_y)
         self._update_mouse_button(pinch_ratio)
 
