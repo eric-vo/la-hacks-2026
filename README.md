@@ -18,7 +18,7 @@ Play/Pause video/music = stop hand (🤚)
 
 **Terminal 1 -- Gesture Backend:**
 ```
-python3 main.py
+python3 server.py
 ```
 
 **Terminal 2 -- React Frontend:**
