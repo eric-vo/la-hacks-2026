@@ -1,39 +1,23 @@
 # HandBridge
 
-Control your computer using only your hand and a webcam — no extra hardware required. HandBridge uses MediaPipe to track 21 hand landmarks in real time and maps gestures to cursor movement, clicks, and media controls.
+Control your mouse and media playback using only your hand and a webcam; no hardware required. The app uses MediaPipe to track 21 hand landmarks in real time and maps gestures to system actions. A "lobster grip" (thumb and index finger extended, others folded) activates cursor mode, where your hand position drives the mouse and a pinch registers as a click. Holding an open palm for half a second triggers play/pause on whatever media is playing.
 
----
+## Media Controls
 
-## Gesture Reference
+Play/Pause video/music = stop hand (🤚)
 
-### Cursor Control
+## Common Gestures
 
-| Gesture | Action |
-| --- | --- |
-| ☝️ Index finger extended up, other three fingers folded | **Activate** cursor mode (hold ~0.6 s) |
-| ✊ Open all fingers or make a full fist | **Deactivate** cursor mode (hold ~0.5 s) |
-| Hand position while active | **Move cursor** (index + thumb tip weighted average) |
-| 🤏 Quick pinch — thumb to index, release fast | **Single click** |
-| 🤏🤏 Two quick pinches in a row | **Double click** |
-| 🤏🤏🤏 Three quick pinches in a row | **Triple click** |
-| 🤏 Pinch and hold (~0.33 s) | **Click and drag** |
+| Message | Gesture |
+|---------|---------|
+| Yes | thumbs up |
+| No |thumbs down |
 
-### Media Controls
+## Run the Program
 
-| Gesture | Action |
-| --- | --- |
-| 🤚 Open palm — all four fingers extended, hold ~0.5 s | **Play / Pause** |
-
-A 1.5 s cooldown prevents accidental re-triggers immediately after the gesture fires.
-
----
-
-## Run
-
-**Terminal 1 — Python backend:**
-
-```bash
-python3 server.py
+**Terminal 1 -- Gesture Backend:**
+```
+python3 main.py
 ```
 
 **Terminal 2 — React frontend:**
