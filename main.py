@@ -261,21 +261,6 @@ def draw_status_overlay(
             cv2.LINE_AA,
         )
 
-    if cursor_status.triple_click:
-        h, w = frame.shape[:2]
-        cx, cy = w // 2, h // 2
-        cv2.circle(frame, (cx, cy), 74, (0, 200, 0), 4)
-        cv2.putText(
-            frame,
-            "TRIPLE CLICK",
-            (cx - 88, cy + 7),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.2,
-            (0, 200, 0),
-            3,
-            cv2.LINE_AA,
-        )
-
     if media_status.triggered:
         h, w = frame.shape[:2]
         cv2.putText(
@@ -313,9 +298,7 @@ def main():
     prev_cursor_active = False
     prev_mouse_down = False
     prev_double_click = False
-    prev_triple_click = False
     prev_media_triggered = False
-    prev_common_triggered = None
     prev_typed_letter = None
 
     active_mode = "cursor"
@@ -370,8 +353,6 @@ def main():
                 log_event("single_click", "Single Click")
             if cursor_status.double_click and not prev_double_click:
                 log_event("double_click", "Double Click")
-            if cursor_status.triple_click and not prev_triple_click:
-                log_event("triple_click", "Triple Click")
             if media_status.triggered and not prev_media_triggered:
                 log_event("media_play_pause", "Play / Pause")
             if (
@@ -385,7 +366,6 @@ def main():
             prev_cursor_active = cursor_status.active
             prev_mouse_down = cursor_status.mouse_down
             prev_double_click = cursor_status.double_click
-            prev_triple_click = cursor_status.triple_click
             prev_media_triggered = media_status.triggered
             prev_typed_letter = typing_status.committed_letter
 

@@ -61,11 +61,10 @@ CURSOR_FREEZE_THRESHOLD = 0.45
 
 # Multi-click: successive pinch-downs within this many frames of the last release.
 MULTI_CLICK_WINDOW_FRAMES = 15
-DRAG_START_THRESHOLD_FRAMES = 10
+DRAG_START_THRESHOLD_FRAMES = 4
 
 # Frames each click label stays visible (~0.83 s at 30 fps).
 DOUBLE_CLICK_FLASH_FRAMES = 25
-TRIPLE_CLICK_FLASH_FRAMES = 25
 
 
 @dataclass
@@ -77,9 +76,8 @@ class CursorState:
     pinch_up_frames: int = 0
     mouse_down: bool = False
     frames_since_last_click: int = -1  # -1 = no recent click; ≥0 = frames since last mouseUp
-    click_sequence: int = 0            # clicks completed in the current rapid sequence (0-2)
+    click_sequence: int = 0            # clicks completed in the current rapid sequence (0-1)
     double_click_flash_frames: int = 0
-    triple_click_flash_frames: int = 0
     smooth_x: float | None = None
     smooth_y: float | None = None
     sent_x: float | None = None
@@ -92,7 +90,6 @@ class CursorStatus:
     pinch_ratio: float | None = None
     mouse_down: bool = False
     double_click: bool = False
-    triple_click: bool = False
 
 
 def euclidean(a, b):
@@ -181,8 +178,6 @@ class CursorControlFeature:
 
         if self.state.double_click_flash_frames > 0:
             self.state.double_click_flash_frames -= 1
-        if self.state.triple_click_flash_frames > 0:
-            self.state.triple_click_flash_frames -= 1
 
         self._update_activation_state(index_up, support_folded)
         pinch_approaching = pinch_ratio is not None and pinch_ratio < CURSOR_FREEZE_THRESHOLD
@@ -195,7 +190,6 @@ class CursorControlFeature:
             pinch_ratio=pinch_ratio,
             mouse_down=self.state.mouse_down,
             double_click=self.state.double_click_flash_frames > 0,
-            triple_click=self.state.triple_click_flash_frames > 0,
         )
 
     def release(self):
@@ -294,10 +288,6 @@ class CursorControlFeature:
                     if self.state.click_sequence == 2:
                         pyautogui.doubleClick()
                         self.state.double_click_flash_frames = DOUBLE_CLICK_FLASH_FRAMES
-                        self._reset_after_action()
-                    elif self.state.click_sequence == 3:
-                        pyautogui.click(clicks=3, interval=0.05)
-                        self.state.triple_click_flash_frames = TRIPLE_CLICK_FLASH_FRAMES
                         self._reset_after_action()
                 else:
                     # It was a long hold/drag, just release
