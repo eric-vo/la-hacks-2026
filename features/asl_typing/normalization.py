@@ -1,6 +1,10 @@
 import math
 
-from .constants import INDEX_MCP, MIDDLE_MCP, PINKY_MCP, WRIST
+try:
+    from .constants import INDEX_MCP, MIDDLE_MCP, PINKY_MCP, WRIST
+except ImportError:
+    # Fallback for direct script execution where relative imports are unavailable.
+    from constants import INDEX_MCP, MIDDLE_MCP, PINKY_MCP, WRIST
 
 
 def _distance(a, b):
