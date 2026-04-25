@@ -12,7 +12,6 @@ from mediapipe.tasks.python import vision
 
 from features.cursor_control import CursorControlFeature
 from features.media_control import MediaControlFeature
-from features.common_gestures import CommonGesturesFeature
 from logger import log_event
 
 
@@ -56,7 +55,6 @@ HAND_CONNECTIONS = [
 
 
 def resolve_model_path():
-    # Prefer an explicit env var, then fall back to local model file.
     env_path = os.environ.get("MEDIAPIPE_HAND_MODEL")
     if env_path:
         return Path(env_path).expanduser().resolve()
@@ -82,18 +80,17 @@ def create_hand_landmarker(model_path):
 
 
 def landmark_color(index):
-    # BGR colors by anatomical group for easier visual debugging.
     if index == WRIST:
-        return (255, 255, 255)  # wrist
+        return (255, 255, 255)
     if 1 <= index <= THUMB_TIP:
-        return (0, 165, 255)  # thumb
+        return (0, 165, 255)
     if 5 <= index <= INDEX_PIP:
-        return (0, 255, 255)  # index
+        return (0, 255, 255)
     if 9 <= index <= MIDDLE_TIP:
-        return (0, 255, 0)  # middle
+        return (0, 255, 0)
     if 13 <= index <= RING_TIP:
-        return (255, 140, 0)  # ring
-    return (255, 0, 255)  # pinky (17-20)
+        return (255, 140, 0)
+    return (255, 0, 255)
 
 
 def draw_hand_landmarks(frame, landmarks):
@@ -122,7 +119,7 @@ def draw_hand_landmarks(frame, landmarks):
         )
 
 
-def draw_status_overlay(frame, cursor_status, media_status, common_status):
+def draw_status_overlay(frame, cursor_status, media_status):
     mode_text = "Mouse Control: ON" if cursor_status.active else "Mouse Control: OFF"
     color = (40, 220, 40) if cursor_status.active else (50, 50, 220)
     cv2.putText(frame, mode_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
@@ -149,9 +146,6 @@ def draw_status_overlay(frame, cursor_status, media_status, common_status):
         media_color = (130, 130, 130)
     cv2.putText(frame, media_label, (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, media_color, 2)
 
-    gesture_label = f"Common Gesture: {common_status.gesture or 'none'}"
-    cv2.putText(frame, gesture_label, (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2)
-
     cv2.putText(
         frame,
         "Press 'q' to quit",
@@ -162,92 +156,38 @@ def draw_status_overlay(frame, cursor_status, media_status, common_status):
         1,
     )
 
-    # Draw click indicator if mouse is down
     if cursor_status.mouse_down:
         h, w = frame.shape[:2]
         cx, cy = w // 2, h // 2
         cv2.circle(frame, (cx, cy), 40, (0, 0, 255), 4)
         cv2.putText(
-            frame,
-            "CLICK",
-            (cx - 35, cy + 7),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.2,
-            (0, 0, 255),
-            3,
-            cv2.LINE_AA,
+            frame, "CLICK", (cx - 35, cy + 7),
+            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3, cv2.LINE_AA,
         )
 
-    # Draw double-click flash indicator
     if cursor_status.double_click:
         h, w = frame.shape[:2]
         cx, cy = w // 2, h // 2
         cv2.circle(frame, (cx, cy), 58, (255, 120, 0), 4)
         cv2.putText(
-            frame,
-            "DOUBLE CLICK",
-            (cx - 90, cy + 7),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.2,
-            (255, 120, 0),
-            3,
-            cv2.LINE_AA,
+            frame, "DOUBLE CLICK", (cx - 90, cy + 7),
+            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 120, 0), 3, cv2.LINE_AA,
         )
 
-    # Draw triple-click flash indicator
     if cursor_status.triple_click:
         h, w = frame.shape[:2]
         cx, cy = w // 2, h // 2
         cv2.circle(frame, (cx, cy), 74, (0, 200, 0), 4)
         cv2.putText(
-            frame,
-            "TRIPLE CLICK",
-            (cx - 88, cy + 7),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.2,
-            (0, 200, 0),
-            3,
-            cv2.LINE_AA,
+            frame, "TRIPLE CLICK", (cx - 88, cy + 7),
+            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 200, 0), 3, cv2.LINE_AA,
         )
 
-    # Flash "PLAY/PAUSE" when the gesture fires
     if media_status.triggered:
         h, w = frame.shape[:2]
         cv2.putText(
-            frame,
-            "PLAY/PAUSE",
-            (w // 2 - 100, h // 2 - 60),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.4,
-            (50, 200, 255),
-            3,
-            cv2.LINE_AA,
-        )
-
-    # Flash "YES" or "NO" when a common gesture triggers.
-    if common_status.triggered == "thumbs_up":
-        h, w = frame.shape[:2]
-        cv2.putText(
-            frame,
-            "YES",
-            (w // 2 - 45, h // 2 + 90),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.6,
-            (40, 220, 40),
-            3,
-            cv2.LINE_AA,
-        )
-    elif common_status.triggered == "thumbs_down":
-        h, w = frame.shape[:2]
-        cv2.putText(
-            frame,
-            "NO",
-            (w // 2 - 30, h // 2 + 90),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.6,
-            (50, 50, 220),
-            3,
-            cv2.LINE_AA,
+            frame, "PLAY/PAUSE", (w // 2 - 100, h // 2 - 60),
+            cv2.FONT_HERSHEY_SIMPLEX, 1.4, (50, 200, 255), 3, cv2.LINE_AA,
         )
 
 
@@ -256,7 +196,6 @@ def main():
     hand_landmarker = create_hand_landmarker(model_path)
     cursor_feature = CursorControlFeature()
     media_feature = MediaControlFeature()
-    common_feature = CommonGesturesFeature()
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -276,7 +215,6 @@ def main():
     prev_double_click = False
     prev_triple_click = False
     prev_media_triggered = False
-    prev_common_triggered = None
 
     try:
         while True:
@@ -298,10 +236,8 @@ def main():
 
             cursor_status = cursor_feature.process_landmarks(landmarks)
             media_status = media_feature.process_landmarks(landmarks)
-            common_status = common_feature.process_landmarks(landmarks)
-            draw_status_overlay(frame, cursor_status, media_status, common_status)
+            draw_status_overlay(frame, cursor_status, media_status)
 
-            # Log gesture events on state transitions (once per event, not every frame).
             if cursor_status.active != prev_cursor_active:
                 log_event("cursor_on" if cursor_status.active else "cursor_off",
                           "Cursor Mode ON" if cursor_status.active else "Cursor Mode OFF")
@@ -313,18 +249,12 @@ def main():
                 log_event("triple_click", "Triple Click")
             if media_status.triggered and not prev_media_triggered:
                 log_event("media_play_pause", "Play / Pause")
-            if common_status.triggered and common_status.triggered != prev_common_triggered:
-                if common_status.triggered == "thumbs_up":
-                    log_event("thumbs_up", "Thumbs Up")
-                elif common_status.triggered == "thumbs_down":
-                    log_event("thumbs_down", "Thumbs Down")
 
             prev_cursor_active = cursor_status.active
             prev_mouse_down = cursor_status.mouse_down
             prev_double_click = cursor_status.double_click
             prev_triple_click = cursor_status.triple_click
             prev_media_triggered = media_status.triggered
-            prev_common_triggered = common_status.triggered
 
             cv2.imshow(win_name, frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):

@@ -21,25 +21,29 @@ RING_MCP = 13
 PINKY_MCP = 17
 
 # Index tip-to-MCP distance must exceed this fraction of palm_size to count as extended.
-# Distance-based so the check works regardless of which direction the finger points.
-INDEX_EXTENSION_RATIO = 0.3
+# 0.5 prevents a loosely-curled fist (e.g. thumbs-up) from falsely triggering cursor mode.
+INDEX_EXTENSION_RATIO = 0.5
 
 # Support finger (middle/ring/pinky) tip-to-MCP must be below this fraction of palm_size
-# to count as folded — also direction-independent.
+# to count as folded — direction-independent.
 FINGER_FOLDED_RATIO = 0.6
 
 # Cursor mapping constants.
-# Only this central fraction of the camera frame maps to the full screen,
-# so small hand movements reach the screen corners without leaving frame.
-INPUT_RANGE = 0.45
-EDGE_PADDING = 0.05  # Dead zone at frame borders to suppress tracking noise
+# 0.60 gives ~4x screen amplification vs the previous 0.45 (~6.7x), reducing jitter.
+INPUT_RANGE = 0.60
+EDGE_PADDING = 0.05
+
+# C-claw grip: thumb is the stable anchor, index is the guide.
+# 80% thumb / 20% index keeps the cursor steady during pinch approach.
+INDEX_WEIGHT = 0.20
+THUMB_WEIGHT = 0.80
 
 # Smoothing constants.
 SMOOTH_ALPHA_BASE = 0.20
 ADAPTIVE_ALPHA_MAX = 0.88
 ADAPTIVE_ALPHA_GAIN = 0.55
 ADAPTIVE_DIST_SCALE = 180.0
-JITTER_DEADZONE_PX = 6.0
+JITTER_DEADZONE_PX = 8.0
 SEND_THRESHOLD_PX = 1.6
 
 # ~600 ms hold to activate; ~500 ms without gesture to deactivate (at 30 fps).
@@ -48,7 +52,7 @@ DEACTIVATE_REQUIRED_FRAMES = 15
 
 # Pinch click: thumb-tip to index-tip distance relative to palm size.
 # Wider hysteresis band avoids accidental re-triggers at the boundary.
-PINCH_DOWN_THRESHOLD = 0.25
+PINCH_DOWN_THRESHOLD = 0.40
 PINCH_UP_THRESHOLD = 0.35
 PINCH_REQUIRED_FRAMES = 3
 # Cursor freezes as soon as the pinch ratio drops below this, before the click fires,
@@ -72,8 +76,8 @@ class CursorState:
     pinch_down_frames: int = 0
     pinch_up_frames: int = 0
     mouse_down: bool = False
-    frames_since_last_click: int = -1   # -1 = no recent click; ≥0 = frames elapsed since last mouseUp
-    click_sequence: int = 0             # clicks completed so far in the current rapid sequence (0-2)
+    frames_since_last_click: int = -1  # -1 = no recent click; ≥0 = frames since last mouseUp
+    click_sequence: int = 0            # clicks completed in the current rapid sequence (0-2)
     double_click_flash_frames: int = 0
     triple_click_flash_frames: int = 0
     smooth_x: float | None = None
@@ -107,13 +111,15 @@ def palm_size(landmarks):
 def _index_extended(landmarks) -> bool:
     """Index finger extended in any direction; middle, ring, pinky folded."""
     psize = palm_size(landmarks)
-    index_extended = euclidean(landmarks[INDEX_TIP], landmarks[INDEX_MCP]) / psize > INDEX_EXTENSION_RATIO
+    index_extended = (
+        euclidean(landmarks[INDEX_TIP], landmarks[INDEX_MCP]) / psize > INDEX_EXTENSION_RATIO
+    )
     support_folded = _support_fingers_folded(landmarks, psize)
     return index_extended and support_folded
 
 
 def _support_fingers_folded(landmarks, psize=None) -> bool:
-    """Middle, ring, pinky are folded — direction-independent, checked while active to allow pinching."""
+    """Middle, ring, pinky folded — direction-independent, allows pinching while active."""
     if psize is None:
         psize = palm_size(landmarks)
     return (
@@ -146,9 +152,12 @@ def extract_landmark_features(landmarks):
     index_up = _index_extended(landmarks)
     support_folded = _support_fingers_folded(landmarks)
     psize = palm_size(landmarks)
-    pinch_ratio = euclidean(landmarks[THUMB_TIP], landmarks[INDEX_TIP]) / psize
-    tip = landmarks[INDEX_TIP]
-    return index_up, support_folded, pinch_ratio, tip.x, tip.y
+    index_tip = landmarks[INDEX_TIP]
+    thumb_tip = landmarks[THUMB_TIP]
+    pinch_ratio = euclidean(thumb_tip, index_tip) / psize
+    cursor_x = INDEX_WEIGHT * index_tip.x + THUMB_WEIGHT * thumb_tip.x
+    cursor_y = INDEX_WEIGHT * index_tip.y + THUMB_WEIGHT * thumb_tip.y
+    return index_up, support_folded, pinch_ratio, cursor_x, cursor_y
 
 
 class CursorControlFeature:
@@ -262,9 +271,11 @@ class CursorControlFeature:
         if pinch_ratio < PINCH_DOWN_THRESHOLD:
             self.state.pinch_down_frames += 1
             self.state.pinch_up_frames = 0
-            
-            # If we've held the pinch long enough, it's a drag/normal click
-            if not self.state.mouse_down and self.state.pinch_down_frames >= DRAG_START_THRESHOLD_FRAMES:
+            # If held long enough, treat as drag/normal click.
+            if (
+                not self.state.mouse_down
+                and self.state.pinch_down_frames >= DRAG_START_THRESHOLD_FRAMES
+            ):
                 if self.state.click_sequence == 0:
                     pyautogui.mouseDown()
                     self.state.mouse_down = True
@@ -273,16 +284,12 @@ class CursorControlFeature:
         # --- PINCH UP (RELEASE) DETECTED ---
         if pinch_ratio > PINCH_UP_THRESHOLD:
             self.state.pinch_up_frames += 1
-            
-            # Action on Release
             if self.state.pinch_down_frames > 0:
-                # Was it a quick tap?
                 is_quick_tap = self.state.pinch_down_frames < DRAG_START_THRESHOLD_FRAMES
-                
                 if is_quick_tap:
                     self.state.click_sequence += 1
-                    self.state.frames_since_last_click = 0 # Start timer
-                    
+                    self.state.frames_since_last_click = 0
+
                     # Handle the sequence logic
                     if self.state.click_sequence == 2:
                         pyautogui.doubleClick()
