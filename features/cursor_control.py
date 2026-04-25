@@ -75,8 +75,10 @@ class CursorState:
     pinch_down_frames: int = 0
     pinch_up_frames: int = 0
     mouse_down: bool = False
-    frames_since_last_click: int = -1  # -1 = no recent click; ≥0 = frames since last mouseUp
-    click_sequence: int = 0            # clicks completed in the current rapid sequence (0-1)
+    frames_since_last_click: int = (
+        -1
+    )  # -1 = no recent click; ≥0 = frames since last mouseUp
+    click_sequence: int = 0  # clicks completed in the current rapid sequence (0-1)
     double_click_flash_frames: int = 0
     smooth_x: float | None = None
     smooth_y: float | None = None
@@ -109,7 +111,8 @@ def _index_extended(landmarks) -> bool:
     """Index finger extended in any direction; middle, ring, pinky folded."""
     psize = palm_size(landmarks)
     index_extended = (
-        euclidean(landmarks[INDEX_TIP], landmarks[INDEX_MCP]) / psize > INDEX_EXTENSION_RATIO
+        euclidean(landmarks[INDEX_TIP], landmarks[INDEX_MCP]) / psize
+        > INDEX_EXTENSION_RATIO
     )
     support_folded = _support_fingers_folded(landmarks, psize)
     return index_extended and support_folded
@@ -120,9 +123,12 @@ def _support_fingers_folded(landmarks, psize=None) -> bool:
     if psize is None:
         psize = palm_size(landmarks)
     return (
-        euclidean(landmarks[MIDDLE_TIP], landmarks[MIDDLE_MCP]) / psize < FINGER_FOLDED_RATIO
-        and euclidean(landmarks[RING_TIP], landmarks[RING_MCP]) / psize < FINGER_FOLDED_RATIO
-        and euclidean(landmarks[PINKY_TIP], landmarks[PINKY_MCP]) / psize < FINGER_FOLDED_RATIO
+        euclidean(landmarks[MIDDLE_TIP], landmarks[MIDDLE_MCP]) / psize
+        < FINGER_FOLDED_RATIO
+        and euclidean(landmarks[RING_TIP], landmarks[RING_MCP]) / psize
+        < FINGER_FOLDED_RATIO
+        and euclidean(landmarks[PINKY_TIP], landmarks[PINKY_MCP]) / psize
+        < FINGER_FOLDED_RATIO
     )
 
 
@@ -180,7 +186,9 @@ class CursorControlFeature:
             self.state.double_click_flash_frames -= 1
 
         self._update_activation_state(index_up, support_folded)
-        pinch_approaching = pinch_ratio is not None and pinch_ratio < CURSOR_FREEZE_THRESHOLD
+        pinch_approaching = (
+            pinch_ratio is not None and pinch_ratio < CURSOR_FREEZE_THRESHOLD
+        )
         if not self.state.mouse_down and not pinch_approaching:
             self._update_cursor_position(cursor_x, cursor_y)
         self._update_mouse_button(pinch_ratio)
@@ -228,7 +236,10 @@ class CursorControlFeature:
         if self.state.smooth_x is None:
             self.state.smooth_x, self.state.smooth_y = tx, ty
             pyautogui.moveTo(self.state.smooth_x, self.state.smooth_y)
-            self.state.sent_x, self.state.sent_y = self.state.smooth_x, self.state.smooth_y
+            self.state.sent_x, self.state.sent_y = (
+                self.state.smooth_x,
+                self.state.smooth_y,
+            )
             return
 
         dx = tx - self.state.smooth_x
@@ -240,10 +251,15 @@ class CursorControlFeature:
 
         adaptive_alpha = min(
             ADAPTIVE_ALPHA_MAX,
-            SMOOTH_ALPHA_BASE + ADAPTIVE_ALPHA_GAIN * min(dist / ADAPTIVE_DIST_SCALE, 1.0),
+            SMOOTH_ALPHA_BASE
+            + ADAPTIVE_ALPHA_GAIN * min(dist / ADAPTIVE_DIST_SCALE, 1.0),
         )
-        self.state.smooth_x = adaptive_alpha * tx + (1.0 - adaptive_alpha) * self.state.smooth_x
-        self.state.smooth_y = adaptive_alpha * ty + (1.0 - adaptive_alpha) * self.state.smooth_y
+        self.state.smooth_x = (
+            adaptive_alpha * tx + (1.0 - adaptive_alpha) * self.state.smooth_x
+        )
+        self.state.smooth_y = (
+            adaptive_alpha * ty + (1.0 - adaptive_alpha) * self.state.smooth_y
+        )
 
         if self.state.sent_x is not None:
             send_dist = math.hypot(
@@ -279,7 +295,9 @@ class CursorControlFeature:
         if pinch_ratio > PINCH_UP_THRESHOLD:
             self.state.pinch_up_frames += 1
             if self.state.pinch_down_frames > 0:
-                is_quick_tap = self.state.pinch_down_frames < DRAG_START_THRESHOLD_FRAMES
+                is_quick_tap = (
+                    self.state.pinch_down_frames < DRAG_START_THRESHOLD_FRAMES
+                )
                 if is_quick_tap:
                     self.state.click_sequence += 1
                     self.state.frames_since_last_click = 0
