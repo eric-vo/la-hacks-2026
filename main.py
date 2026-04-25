@@ -1,14 +1,13 @@
-import math
 import os
 import time
-from dataclasses import dataclass
 from pathlib import Path
 
 import cv2
 import mediapipe as mp
-import pyautogui
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
+
+from features.cursor_control import CursorControlFeature
 
 
 # Landmark indices in MediaPipe Hands.
@@ -22,10 +21,6 @@ RING_PIP = 14
 PINKY_TIP = 20
 PINKY_PIP = 18
 WRIST = 0
-INDEX_MCP = 5
-PINKY_MCP = 17
-
-LOBSTER_GRIP_RATIO_THRESHOLD = 0.6
 
 
 # MediaPipe hand landmark graph (21 points) connections.
@@ -121,186 +116,15 @@ def draw_hand_landmarks(frame, landmarks):
         )
 
 
-@dataclass
-class MouseState:
-    active: bool = False
-    activation_frames: int = 0
-    deactivation_frames: int = 0
-    pinch_down_frames: int = 0
-    pinch_up_frames: int = 0
-    mouse_down: bool = False
-    smooth_x: float | None = None
-    smooth_y: float | None = None
-    sent_x: float | None = None
-    sent_y: float | None = None
-
-
-def euclidean(a, b):
-    return math.hypot(a.x - b.x, a.y - b.y)
-
-
-def palm_size(landmarks):
-    # A scale reference used to make thresholds hand-size agnostic.
-    wrist = landmarks[WRIST]
-    index_mcp = landmarks[INDEX_MCP]
-    pinky_mcp = landmarks[PINKY_MCP]
-    return max(euclidean(wrist, index_mcp), euclidean(wrist, pinky_mcp), 1e-6)
-
-
-def is_folded(tip, pip, margin=0.02):
-    # In image coordinates, larger y is lower on screen.
-    return tip.y > (pip.y + margin)
-
-
-def map_to_screen(x_norm, y_norm, screen_w, screen_h, edge_padding=0.15):
-    # Ignore edge regions to reduce jumpiness and accidental edge hits.
-    x_clamped = min(max(x_norm, edge_padding), 1.0 - edge_padding)
-    y_clamped = min(max(y_norm, edge_padding), 1.0 - edge_padding)
-
-    xr = (x_clamped - edge_padding) / (1.0 - 2.0 * edge_padding)
-    yr = (y_clamped - edge_padding) / (1.0 - 2.0 * edge_padding)
-
-    return xr * screen_w, yr * screen_h
-
-
-@dataclass
-class GestureData:
-    lobster_pose: bool = False
-    pinch_ratio: float | None = None
-    weighted_x: float | None = None
-    weighted_y: float | None = None
-
-
-def extract_gesture_data(hand_result, frame):
-    data = GestureData()
-    if not hand_result.hand_landmarks:
-        return data
-
-    lm = hand_result.hand_landmarks[0]
-    draw_hand_landmarks(frame, lm)
-
-    psize = palm_size(lm)
-    thumb_tip = lm[THUMB_TIP]
-    index_tip = lm[INDEX_TIP]
-
-    middle_folded = is_folded(lm[MIDDLE_TIP], lm[MIDDLE_PIP])
-    ring_folded = is_folded(lm[RING_TIP], lm[RING_PIP])
-    pinky_folded = is_folded(lm[PINKY_TIP], lm[PINKY_PIP])
-    others_folded = middle_folded and ring_folded and pinky_folded
-
-    thumb_index_dist = euclidean(thumb_tip, index_tip)
-    grip_ratio = thumb_index_dist / psize
-
-    data.pinch_ratio = grip_ratio
-
-    data.lobster_pose = others_folded and (grip_ratio < LOBSTER_GRIP_RATIO_THRESHOLD)
-    data.weighted_x = 0.60 * index_tip.x + 0.40 * thumb_tip.x
-    data.weighted_y = 0.60 * index_tip.y + 0.40 * thumb_tip.y
-    return data
-
-
-def update_activation_state(
-    state, lobster_pose, activate_required_frames, deactivate_required_frames
-):
-    if lobster_pose:
-        state.activation_frames += 1
-        state.deactivation_frames = 0
-        if state.activation_frames >= activate_required_frames:
-            state.active = True
-        return
-
-    state.deactivation_frames += 1
-    state.activation_frames = 0
-    if state.deactivation_frames >= deactivate_required_frames:
-        state.active = False
-
-
-def update_cursor_position(
-    state,
-    weighted_x,
-    weighted_y,
-    screen_w,
-    screen_h,
-    smooth_alpha,
-    jitter_deadzone_px,
-    send_threshold_px,
-):
-    if not state.active or (weighted_x is None) or (weighted_y is None):
-        return
-
-    tx, ty = map_to_screen(weighted_x, weighted_y, screen_w, screen_h)
-    if state.smooth_x is None:
-        state.smooth_x, state.smooth_y = tx, ty
-        pyautogui.moveTo(state.smooth_x, state.smooth_y)
-        state.sent_x, state.sent_y = state.smooth_x, state.smooth_y
-    else:
-        dx = tx - state.smooth_x
-        dy = ty - state.smooth_y
-        dist = math.hypot(dx, dy)
-
-        # Ignore tiny frame-to-frame motion so a still hand stays still.
-        if dist < jitter_deadzone_px:
-            return
-
-        # Move faster for large motions, smoother for small motions.
-        adaptive_alpha = min(0.88, smooth_alpha + 0.55 * min(dist / 180.0, 1.0))
-        state.smooth_x = adaptive_alpha * tx + (1.0 - adaptive_alpha) * state.smooth_x
-        state.smooth_y = adaptive_alpha * ty + (1.0 - adaptive_alpha) * state.smooth_y
-
-    if (state.sent_x is not None) and (state.sent_y is not None):
-        if (
-            math.hypot(state.smooth_x - state.sent_x, state.smooth_y - state.sent_y)
-            < send_threshold_px
-        ):
-            return
-
-    pyautogui.moveTo(state.smooth_x, state.smooth_y)
-    state.sent_x, state.sent_y = state.smooth_x, state.smooth_y
-
-
-def update_mouse_button(
-    state, pinch_ratio, pinch_down_th, pinch_up_th, pinch_required_frames
-):
-    # Pinch down/up with hysteresis and debounce to avoid noise.
-    if state.active and (pinch_ratio is not None):
-        if pinch_ratio < pinch_down_th:
-            state.pinch_down_frames += 1
-            state.pinch_up_frames = 0
-            if (not state.mouse_down) and (
-                state.pinch_down_frames >= pinch_required_frames
-            ):
-                pyautogui.mouseDown()
-                state.mouse_down = True
-            return
-
-        if pinch_ratio > pinch_up_th:
-            state.pinch_up_frames += 1
-            state.pinch_down_frames = 0
-            if state.mouse_down and (state.pinch_up_frames >= pinch_required_frames):
-                pyautogui.mouseUp()
-                state.mouse_down = False
-            return
-
-        state.pinch_down_frames = 0
-        state.pinch_up_frames = 0
-        return
-
-    state.pinch_down_frames = 0
-    state.pinch_up_frames = 0
-    if state.mouse_down:
-        pyautogui.mouseUp()
-        state.mouse_down = False
-
-
-def draw_status_overlay(frame, state, pinch_ratio):
-    mode_text = "Mouse Control: ON" if state.active else "Mouse Control: OFF"
-    color = (40, 220, 40) if state.active else (50, 50, 220)
+def draw_status_overlay(frame, cursor_status):
+    mode_text = "Mouse Control: ON" if cursor_status.active else "Mouse Control: OFF"
+    color = (40, 220, 40) if cursor_status.active else (50, 50, 220)
     cv2.putText(frame, mode_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
-    if pinch_ratio is not None:
+    if cursor_status.pinch_ratio is not None:
         cv2.putText(
             frame,
-            f"Pinch ratio: {pinch_ratio:.2f}",
+            f"Pinch ratio: {cursor_status.pinch_ratio:.2f}",
             (10, 60),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.7,
@@ -319,7 +143,7 @@ def draw_status_overlay(frame, state, pinch_ratio):
     )
 
     # Draw click indicator if mouse is down
-    if state.mouse_down:
+    if cursor_status.mouse_down:
         h, w = frame.shape[:2]
         cx, cy = w // 2, h // 2
         cv2.circle(frame, (cx, cy), 40, (0, 0, 255), 4)
@@ -336,33 +160,13 @@ def draw_status_overlay(frame, state, pinch_ratio):
 
 
 def main():
-    pyautogui.PAUSE = 0.0
-    pyautogui.FAILSAFE = False
-
-    screen_w, screen_h = pyautogui.size()
-
     model_path = resolve_model_path()
     hand_landmarker = create_hand_landmarker(model_path)
+    cursor_feature = CursorControlFeature()
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         raise RuntimeError("Could not open camera.")
-
-    state = MouseState()
-
-    # Gesture thresholds in units normalized by palm size.
-    pinch_down_th = 0.24
-    pinch_up_th = 0.28
-
-    # Debounce/hysteresis to avoid accidental triggers.
-    activate_required_frames = 7
-    deactivate_required_frames = 5
-    pinch_required_frames = 2
-
-    # Cursor stability tuning.
-    smooth_alpha = 0.20
-    jitter_deadzone_px = 6.0
-    send_threshold_px = 1.6
 
     try:
         while True:
@@ -376,42 +180,18 @@ def main():
             timestamp_ms = int(time.monotonic() * 1000)
             hand_result = hand_landmarker.detect_for_video(mp_image, timestamp_ms)
 
-            gesture = extract_gesture_data(hand_result, frame)
+            landmarks = hand_result.hand_landmarks[0] if hand_result.hand_landmarks else None
+            if landmarks:
+                draw_hand_landmarks(frame, landmarks)
 
-            update_activation_state(
-                state,
-                gesture.lobster_pose,
-                activate_required_frames,
-                deactivate_required_frames,
-            )
-
-            update_cursor_position(
-                state,
-                gesture.weighted_x,
-                gesture.weighted_y,
-                screen_w,
-                screen_h,
-                smooth_alpha,
-                jitter_deadzone_px,
-                send_threshold_px,
-            )
-
-            update_mouse_button(
-                state,
-                gesture.pinch_ratio,
-                pinch_down_th,
-                pinch_up_th,
-                pinch_required_frames,
-            )
-
-            draw_status_overlay(frame, state, gesture.pinch_ratio)
+            cursor_status = cursor_feature.process_landmarks(landmarks)
+            draw_status_overlay(frame, cursor_status)
 
             cv2.imshow("Hand Mouse Control", frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
     finally:
-        if state.mouse_down:
-            pyautogui.mouseUp()
+        cursor_feature.release()
         cap.release()
         hand_landmarker.close()
         cv2.destroyAllWindows()
