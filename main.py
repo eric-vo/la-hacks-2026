@@ -2,6 +2,7 @@ import os
 import time
 from pathlib import Path
 from dotenv import load_dotenv
+
 load_dotenv()
 
 import cv2
@@ -10,9 +11,10 @@ import pyautogui
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
-from features.cursor_control import CursorControlFeature
-from features.media_control import MediaControlFeature
-from features.common_gestures import CommonGesturesFeature
+from features.asl_typing import AslTypingFeature, AslTypingStatus
+from features.common_gestures import CommonGesturesFeature, CommonGesturesStatus
+from features.cursor_control import CursorControlFeature, CursorStatus
+from features.media_control import MediaControlFeature, MediaStatus
 from logger import log_event
 
 
@@ -122,16 +124,37 @@ def draw_hand_landmarks(frame, landmarks):
         )
 
 
-def draw_status_overlay(frame, cursor_status, media_status, common_status):
-    mode_text = "Mouse Control: ON" if cursor_status.active else "Mouse Control: OFF"
-    color = (40, 220, 40) if cursor_status.active else (50, 50, 220)
-    cv2.putText(frame, mode_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+def draw_status_overlay(
+    frame,
+    active_mode,
+    cursor_status,
+    media_status,
+    common_status,
+    typing_status,
+):
+    mode_text = f"Mode: {active_mode.upper()}"
+    mode_color = (40, 220, 40) if active_mode == "cursor" else (220, 180, 60)
+    cv2.putText(
+        frame, mode_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, mode_color, 2
+    )
+
+    cursor_text = "Mouse Control: ON" if cursor_status.active else "Mouse Control: OFF"
+    cursor_color = (40, 220, 40) if cursor_status.active else (50, 50, 220)
+    cv2.putText(
+        frame,
+        cursor_text,
+        (10, 60),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        cursor_color,
+        2,
+    )
 
     if cursor_status.pinch_ratio is not None:
         cv2.putText(
             frame,
             f"Pinch ratio: {cursor_status.pinch_ratio:.2f}",
-            (10, 60),
+            (10, 90),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.7,
             (255, 255, 255),
@@ -147,10 +170,71 @@ def draw_status_overlay(frame, cursor_status, media_status, common_status):
     else:
         media_label = "Media hand: ready"
         media_color = (130, 130, 130)
-    cv2.putText(frame, media_label, (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, media_color, 2)
+    cv2.putText(
+        frame,
+        media_label,
+        (10, 120),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        media_color,
+        2,
+    )
 
     gesture_label = f"Common Gesture: {common_status.gesture or 'none'}"
-    cv2.putText(frame, gesture_label, (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2)
+    cv2.putText(
+        frame,
+        gesture_label,
+        (10, 150),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (200, 200, 200),
+        2,
+    )
+
+    model_text = "loaded" if typing_status.model_loaded else "missing"
+    if typing_status.confidence is not None:
+        typing_line = (
+            f"Typing: {typing_status.candidate_letter or '-'}"
+            f" | conf: {typing_status.confidence:.2f}"
+        )
+    else:
+        typing_line = "Typing: - | conf: -"
+    cv2.putText(
+        frame,
+        f"ASL model: {model_text}",
+        (10, 180),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (210, 210, 210),
+        2,
+    )
+    cv2.putText(
+        frame,
+        typing_line,
+        (10, 210),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (210, 210, 210),
+        2,
+    )
+    cv2.putText(
+        frame,
+        f"Typed: {typing_status.typed_text or ''}",
+        (10, 240),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.7,
+        (180, 255, 180),
+        2,
+    )
+    cv2.putText(
+        frame,
+        "Keys: 1=cursor, 2=media, 3=common, 4=typing",
+        (10, 270),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (180, 180, 180),
+        1,
+    )
 
     cv2.putText(
         frame,
@@ -257,6 +341,7 @@ def main():
     cursor_feature = CursorControlFeature()
     media_feature = MediaControlFeature()
     common_feature = CommonGesturesFeature()
+    typing_feature = AslTypingFeature()
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -277,6 +362,9 @@ def main():
     prev_triple_click = False
     prev_media_triggered = False
     prev_common_triggered = None
+    prev_typed_letter = None
+
+    active_mode = "cursor"
 
     try:
         while True:
@@ -296,15 +384,41 @@ def main():
             if landmarks:
                 draw_hand_landmarks(frame, landmarks)
 
-            cursor_status = cursor_feature.process_landmarks(landmarks)
-            media_status = media_feature.process_landmarks(landmarks)
-            common_status = common_feature.process_landmarks(landmarks)
-            draw_status_overlay(frame, cursor_status, media_status, common_status)
+            if active_mode == "cursor":
+                cursor_status = cursor_feature.process_landmarks(landmarks)
+            else:
+                cursor_feature.release()
+                cursor_status = CursorStatus()
+
+            if active_mode == "media":
+                media_status = media_feature.process_landmarks(landmarks)
+            else:
+                media_status = MediaStatus()
+
+            if active_mode == "common":
+                common_status = common_feature.process_landmarks(landmarks)
+            else:
+                common_status = CommonGesturesStatus()
+
+            typing_status = typing_feature.process_landmarks(
+                landmarks, enabled=(active_mode == "typing")
+            )
+
+            draw_status_overlay(
+                frame,
+                active_mode,
+                cursor_status,
+                media_status,
+                common_status,
+                typing_status,
+            )
 
             # Log gesture events on state transitions (once per event, not every frame).
             if cursor_status.active != prev_cursor_active:
-                log_event("cursor_on" if cursor_status.active else "cursor_off",
-                          "Cursor Mode ON" if cursor_status.active else "Cursor Mode OFF")
+                log_event(
+                    "cursor_on" if cursor_status.active else "cursor_off",
+                    "Cursor Mode ON" if cursor_status.active else "Cursor Mode OFF",
+                )
             if cursor_status.mouse_down and not prev_mouse_down:
                 log_event("single_click", "Single Click")
             if cursor_status.double_click and not prev_double_click:
@@ -313,11 +427,21 @@ def main():
                 log_event("triple_click", "Triple Click")
             if media_status.triggered and not prev_media_triggered:
                 log_event("media_play_pause", "Play / Pause")
-            if common_status.triggered and common_status.triggered != prev_common_triggered:
+            if (
+                common_status.triggered
+                and common_status.triggered != prev_common_triggered
+            ):
                 if common_status.triggered == "thumbs_up":
                     log_event("thumbs_up", "Thumbs Up")
                 elif common_status.triggered == "thumbs_down":
                     log_event("thumbs_down", "Thumbs Down")
+            if (
+                typing_status.committed_letter
+                and typing_status.committed_letter != prev_typed_letter
+            ):
+                log_event(
+                    "typed_letter", f"Typed letter: {typing_status.committed_letter}"
+                )
 
             prev_cursor_active = cursor_status.active
             prev_mouse_down = cursor_status.mouse_down
@@ -325,9 +449,21 @@ def main():
             prev_triple_click = cursor_status.triple_click
             prev_media_triggered = media_status.triggered
             prev_common_triggered = common_status.triggered
+            prev_typed_letter = typing_status.committed_letter
 
             cv2.imshow(win_name, frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("1"):
+                active_mode = "cursor"
+            elif key == ord("2"):
+                active_mode = "media"
+            elif key == ord("3"):
+                active_mode = "common"
+            elif key == ord("4"):
+                active_mode = "typing"
+            elif key == ord("r"):
+                typing_feature.reload_models()
+            elif key == ord("q"):
                 break
             if cv2.getWindowProperty(win_name, cv2.WND_PROP_VISIBLE) < 1:
                 break

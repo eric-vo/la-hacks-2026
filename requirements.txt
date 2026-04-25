@@ -5,3 +5,6 @@ pynput
 python-dotenv
 fastapi
 uvicorn[standard]
+numpy
+scikit-learn
+joblib
