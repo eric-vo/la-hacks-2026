@@ -148,5 +148,143 @@
     "timestamp": "2026-04-25T06:03:52.488250",
     "type": "cursor_off",
     "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 26,
+    "timestamp": "2026-04-25T06:52:15.011527",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 27,
+    "timestamp": "2026-04-25T06:52:17.010379",
+    "type": "media_play_pause",
+    "label": "Play / Pause"
+  },
+  {
+    "id": 28,
+    "timestamp": "2026-04-25T06:52:20.498435",
+    "type": "thumbs_up",
+    "label": "Thumbs Up"
+  },
+  {
+    "id": 29,
+    "timestamp": "2026-04-25T06:52:22.408140",
+    "type": "thumbs_up",
+    "label": "Thumbs Up"
+  },
+  {
+    "id": 30,
+    "timestamp": "2026-04-25T06:52:24.755489",
+    "type": "thumbs_down",
+    "label": "Thumbs Down"
+  },
+  {
+    "id": 31,
+    "timestamp": "2026-04-25T06:52:27.395036",
+    "type": "thumbs_up",
+    "label": "Thumbs Up"
+  },
+  {
+    "id": 32,
+    "timestamp": "2026-04-25T06:52:27.609811",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 33,
+    "timestamp": "2026-04-25T06:52:29.303854",
+    "type": "thumbs_up",
+    "label": "Thumbs Up"
+  },
+  {
+    "id": 34,
+    "timestamp": "2026-04-25T06:52:31.475682",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
+  },
+  {
+    "id": 35,
+    "timestamp": "2026-04-25T06:52:34.291501",
+    "type": "cursor_on",
+    "label": "Cursor Mode ON"
+  },
+  {
+    "id": 36,
+    "timestamp": "2026-04-25T06:52:42.066975",
+    "type": "thumbs_up",
+    "label": "Thumbs Up"
+  },
+  {
+    "id": 37,
+    "timestamp": "2026-04-25T06:52:44.042100",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 38,
+    "timestamp": "2026-04-25T06:52:45.753096",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 39,
+    "timestamp": "2026-04-25T06:52:46.758579",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 40,
+    "timestamp": "2026-04-25T06:52:47.386592",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 41,
+    "timestamp": "2026-04-25T06:52:48.087077",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 42,
+    "timestamp": "2026-04-25T06:52:49.496869",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 43,
+    "timestamp": "2026-04-25T06:52:52.475628",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 44,
+    "timestamp": "2026-04-25T06:52:52.987104",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 45,
+    "timestamp": "2026-04-25T06:52:54.021372",
+    "type": "double_click",
+    "label": "Double Click"
+  },
+  {
+    "id": 46,
+    "timestamp": "2026-04-25T06:52:54.421569",
+    "type": "single_click",
+    "label": "Single Click"
+  },
+  {
+    "id": 47,
+    "timestamp": "2026-04-25T06:52:54.794320",
+    "type": "thumbs_up",
+    "label": "Thumbs Up"
+  },
+  {
+    "id": 48,
+    "timestamp": "2026-04-25T06:52:57.063727",
+    "type": "cursor_off",
+    "label": "Cursor Mode OFF"
   }
 ]
