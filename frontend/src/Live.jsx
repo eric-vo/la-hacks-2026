@@ -101,7 +101,7 @@ export default function Live() {
                 </Panel>
 
                 <Panel title="Click State">
-                  <span className={`click-label ${(state.mouse_down || state.double_click || state.triple_click) ? 'click-active' : ''}`}>
+                  <span className={`click-label ${(state.mouse_down || state.double_click) ? 'click-active' : ''}`}>
                     {clickLabel}
                   </span>
                 </Panel>
