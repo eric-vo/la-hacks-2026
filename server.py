@@ -15,7 +15,6 @@ from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
 from features import gemma_assistant
-from features.voice import speak_word
 from features.asl_typing import AslTypingFeature
 from features.cursor_control import (
     CursorControlFeature,
