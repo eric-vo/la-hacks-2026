@@ -60,7 +60,7 @@ export default function Live() {
         {/* ── Camera feed ── */}
         <div className="live-camera-wrap">
           {connected
-            ? <img className="live-camera" src="/video" alt="live hand tracking feed" />
+            ? <img className="live-camera" src="http://localhost:8000/video" alt="live hand tracking feed" />
             : <div className="live-camera-placeholder">
                 <span>📷</span>
                 <p>Waiting for server…</p>
@@ -94,6 +94,26 @@ export default function Live() {
               labelOn="▶︎ Play / Pause fired"
               labelOff={state.media_gesture ? 'Holding open palm…' : 'Ready'}
             />
+          </Panel>
+
+          <Panel title="ASL Input">
+            <div className="asl-row">
+              <span className="asl-candidate">{state.asl_candidate ?? '—'}</span>
+              <span className="asl-typed">{state.asl_typed || <em>nothing typed yet</em>}</span>
+            </div>
+          </Panel>
+
+          <Panel title="Gemma Prediction">
+            <p className={`gemma-prediction ${state.gemma_thinking ? 'gemma-thinking' : ''} ${state.gemma_error ? 'gemma-error' : ''}`}>
+              {state.gemma_thinking
+                ? 'Thinking…'
+                : state.gemma_error
+                ? state.gemma_error
+                : state.gemma_prediction || <em>waiting for input</em>}
+            </p>
+            <p className="panel-hint">
+              {state.thumb_up ? 'Sending to Gemma…' : 'Thumbs up to predict'}
+            </p>
           </Panel>
 
         </div>

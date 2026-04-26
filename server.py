@@ -14,7 +14,17 @@ from fastapi.responses import StreamingResponse
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
-from features.cursor_control import CursorControlFeature
+from features import gemma_assistant
+from features.asl_typing import AslTypingFeature
+from features.cursor_control import (
+    CursorControlFeature,
+    THUMB_TIP, INDEX_TIP, INDEX_MCP,
+    MIDDLE_TIP, MIDDLE_MCP,
+    RING_TIP, RING_MCP,
+    PINKY_TIP, PINKY_MCP,
+    WRIST,
+    euclidean, palm_size,
+)
 from features.media_control import MediaControlFeature
 from logger import log_event
 
@@ -32,8 +42,13 @@ _latest_state: dict = {
     "mouse_down": False,
     "double_click": False,
     "triple_click": False,
+    "thumb_up": False,
     "media_gesture": False,
     "media_triggered": False,
+    "asl_candidate": None,
+    "asl_typed": "",
+    "gemma_prediction": "",
+    "gemma_thinking": False,
 }
 
 # ── Hand skeleton drawing ─────────────────────────────────────────────────────
@@ -66,6 +81,25 @@ def _draw_landmarks(frame, landmarks):
     for i, lm in enumerate(landmarks):
         cv2.circle(frame, (int(lm.x * w), int(lm.y * h)), 4, _landmark_color(i), -1)
 
+# Thumbs-up: thumb tip well above wrist, four fingers folded.
+_THUMB_UP_FRAMES_REQUIRED = 12  # ~0.4 s at 30 fps
+
+def _is_thumb_up(landmarks) -> bool:
+    if not landmarks:
+        return False
+    psize = palm_size(landmarks)
+    thumb_raised = (landmarks[WRIST].y - landmarks[THUMB_TIP].y) / psize > 0.8
+    fingers_folded = all(
+        euclidean(landmarks[tip], landmarks[mcp]) / psize < 0.6
+        for tip, mcp in [
+            (INDEX_TIP, INDEX_MCP),
+            (MIDDLE_TIP, MIDDLE_MCP),
+            (RING_TIP, RING_MCP),
+            (PINKY_TIP, PINKY_MCP),
+        ]
+    )
+    return thumb_raised and fingers_folded
+
 # ── Camera loop (background daemon thread) ────────────────────────────────────
 
 def _camera_loop():
@@ -91,6 +125,7 @@ def _camera_loop():
     landmarker = vision.HandLandmarker.create_from_options(options)
     cursor_feature = CursorControlFeature()
     media_feature = MediaControlFeature()
+    typing_feature = AslTypingFeature()
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         raise RuntimeError("Could not open camera")
@@ -98,8 +133,9 @@ def _camera_loop():
     prev_cursor_active = False
     prev_mouse_down = False
     prev_double_click = False
-    prev_triple_click = False
     prev_media_triggered = False
+    thumb_up_frames = 0
+    thumb_up_fired = False  # prevents re-firing until gesture is released
 
     try:
         while True:
@@ -107,56 +143,80 @@ def _camera_loop():
             if not ok:
                 break
 
-            frame = cv2.flip(frame, 1)
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-            ts = int(time.monotonic() * 1000)
-            result = landmarker.detect_for_video(mp_image, ts)
+            try:
+                frame = cv2.flip(frame, 1)
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+                ts = int(time.monotonic() * 1000)
+                result = landmarker.detect_for_video(mp_image, ts)
 
-            landmarks = result.hand_landmarks[0] if result.hand_landmarks else None
-            if landmarks:
-                _draw_landmarks(frame, landmarks)
+                landmarks = result.hand_landmarks[0] if result.hand_landmarks else None
+                if landmarks:
+                    _draw_landmarks(frame, landmarks)
 
-            cursor_status = cursor_feature.process_landmarks(landmarks)
-            media_status  = media_feature.process_landmarks(landmarks)
+                cursor_status = cursor_feature.process_landmarks(landmarks)
+                media_status  = media_feature.process_landmarks(landmarks)
+                typing_status = typing_feature.process_landmarks(landmarks)
 
-            # Log on state transitions only.
-            if cursor_status.active != prev_cursor_active:
-                log_event(
-                    "cursor_on" if cursor_status.active else "cursor_off",
-                    "Cursor Mode ON" if cursor_status.active else "Cursor Mode OFF",
-                )
-            if cursor_status.mouse_down and not prev_mouse_down:
-                log_event("single_click", "Single Click")
-            if cursor_status.double_click and not prev_double_click:
-                log_event("double_click", "Double Click")
-            if cursor_status.triple_click and not prev_triple_click:
-                log_event("triple_click", "Triple Click")
-            if media_status.triggered and not prev_media_triggered:
-                log_event("media_play_pause", "Play / Pause")
+                # Thumbs-up gesture triggers Gemma on the accumulated typed text.
+                if _is_thumb_up(landmarks):
+                    thumb_up_frames += 1
+                    if (
+                        thumb_up_frames >= _THUMB_UP_FRAMES_REQUIRED
+                        and not thumb_up_fired
+                        and typing_status.typed_text
+                    ):
+                        gemma_assistant.submit(typing_status.typed_text)
+                        thumb_up_fired = True
+                else:
+                    thumb_up_frames = 0
+                    thumb_up_fired = False
 
-            prev_cursor_active   = cursor_status.active
-            prev_mouse_down      = cursor_status.mouse_down
-            prev_double_click    = cursor_status.double_click
-            prev_triple_click    = cursor_status.triple_click
-            prev_media_triggered = bool(media_status.triggered)
+                thumb_up_active = thumb_up_frames >= _THUMB_UP_FRAMES_REQUIRED
 
-            # Encode and store latest frame.
-            _, jpg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-            with _frame_lock:
-                _latest_jpeg = jpg.tobytes()
+                # Log on state transitions only.
+                if cursor_status.active != prev_cursor_active:
+                    log_event(
+                        "cursor_on" if cursor_status.active else "cursor_off",
+                        "Cursor Mode ON" if cursor_status.active else "Cursor Mode OFF",
+                    )
+                if cursor_status.mouse_down and not prev_mouse_down:
+                    log_event("single_click", "Single Click")
+                if cursor_status.double_click and not prev_double_click:
+                    log_event("double_click", "Double Click")
+                if media_status.triggered and not prev_media_triggered:
+                    log_event("media_play_pause", "Play / Pause")
 
-            # Update gesture state for WebSocket clients.
-            with _state_lock:
-                _latest_state.update({
-                    "cursor_active":   cursor_status.active,
-                    "pinch_ratio":     cursor_status.pinch_ratio,
-                    "mouse_down":      cursor_status.mouse_down,
-                    "double_click":    cursor_status.double_click,
-                    "triple_click":    cursor_status.triple_click,
-                    "media_gesture":   media_status.gesture_detected,
-                    "media_triggered": bool(media_status.triggered),
-                })
+                prev_cursor_active   = cursor_status.active
+                prev_mouse_down      = cursor_status.mouse_down
+                prev_double_click    = cursor_status.double_click
+                prev_media_triggered = bool(media_status.triggered)
+
+                # Encode and store latest frame.
+                _, jpg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                with _frame_lock:
+                    _latest_jpeg = jpg.tobytes()
+
+                # Update gesture state for WebSocket clients.
+                gemma = gemma_assistant.get_state()
+                with _state_lock:
+                    _latest_state.update({
+                        "cursor_active":    cursor_status.active,
+                        "pinch_ratio":      cursor_status.pinch_ratio,
+                        "mouse_down":       cursor_status.mouse_down,
+                        "double_click":     cursor_status.double_click,
+                        "triple_click":     False,
+                        "thumb_up":         thumb_up_active,
+                        "media_gesture":    media_status.gesture_detected,
+                        "media_triggered":  bool(media_status.triggered),
+                        "asl_candidate":    typing_status.candidate_letter,
+                        "asl_typed":        typing_status.typed_text,
+                        "gemma_prediction": gemma["prediction"],
+                        "gemma_thinking":   gemma["thinking"],
+                        "gemma_error":      gemma.get("error", ""),
+                    })
+            except Exception as exc:  # noqa: BLE001
+                print(f"[camera loop] frame error: {exc}")
     finally:
         cursor_feature.release()
         cap.release()

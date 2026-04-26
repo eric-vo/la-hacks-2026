@@ -26,9 +26,6 @@ export default function Navbar() {
           <span className="nav-live-dot" />
           Live
         </NavLink>
-        <NavLink to="/log" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          Log
-        </NavLink>
       </div>
     </nav>
   )

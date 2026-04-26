@@ -8,8 +8,14 @@ const DEFAULT_STATE = {
   mouse_down: false,
   double_click: false,
   triple_click: false,
+  thumb_up: false,
   media_gesture: false,
   media_triggered: false,
+  asl_candidate: null,
+  asl_typed: '',
+  gemma_prediction: '',
+  gemma_thinking: false,
+  gemma_error: '',
 }
 
 export function GestureProvider({ children }) {

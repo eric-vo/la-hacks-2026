@@ -164,6 +164,54 @@
   text-align: right;
 }
 
+/* ── ASL input panel ── */
+.asl-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.asl-candidate {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #58a6ff;
+  min-width: 1.5rem;
+  text-align: center;
+  line-height: 1;
+}
+
+.asl-typed {
+  font-family: monospace;
+  font-size: 1rem;
+  color: #e6edf3;
+  letter-spacing: 0.1em;
+  word-break: break-all;
+}
+
+/* ── Gemma prediction panel ── */
+.gemma-prediction {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #3fb950;
+  line-height: 1.4;
+  min-height: 1.4rem;
+  transition: color 0.2s ease;
+}
+.gemma-prediction em {
+  color: #484f58;
+  font-style: normal;
+  font-weight: 400;
+}
+.gemma-thinking {
+  color: #d29922;
+  animation: pulse-dot 1s ease-in-out infinite;
+}
+.gemma-error {
+  color: #f85149;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
 /* ── Click label ── */
 .click-label {
   font-size: 1rem;
