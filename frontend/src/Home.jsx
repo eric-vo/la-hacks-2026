@@ -146,7 +146,7 @@ const STEPS = [
   {
     num: '01',
     title: 'Open the dashboard',
-    desc: 'Click Get Started and allow camera access. HandBridge begins landmark detection immediately in your browser.',
+    desc: 'Click Get Started and allow camera access. SignPC begins landmark detection immediately in your browser.',
   },
   {
     num: '02',
@@ -238,7 +238,7 @@ export default function Home() {
             <span className="hero-headline-accent">Your interface.</span>
           </h1>
           <p className="hero-sub">
-            HandBridge translates natural hand gestures into keyboard and mouse actions —
+            SignPC translates natural hand gestures into keyboard and mouse actions —
             designed for ASL users, those with motor impairments, and anyone who thinks
             with their hands.
           </p>

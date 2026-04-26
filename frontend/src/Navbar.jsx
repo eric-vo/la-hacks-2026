@@ -15,7 +15,7 @@ export default function Navbar() {
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <NavLink to="/" className="nav-logo">
         <span className="nav-logo-icon">✋</span>
-        <span className="nav-logo-text">HandBridge</span>
+        <span className="nav-logo-text">SignPC</span>
       </NavLink>
 
       <div className="nav-links">
