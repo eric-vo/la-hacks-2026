@@ -37,9 +37,7 @@ function PinchBar({ ratio }) {
 export default function Live() {
   const { state, connected } = useGesture()
 
-  const clickLabel = state.triple_click
-    ? '⚡ Triple Click'
-    : state.double_click
+  const clickLabel = state.double_click
     ? '⚡ Double Click'
     : state.mouse_down
     ? '🔴 Holding'

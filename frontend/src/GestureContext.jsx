@@ -7,7 +7,6 @@ const DEFAULT_STATE = {
   pinch_ratio: null,
   mouse_down: false,
   double_click: false,
-  triple_click: false,
   thumb_up: false,
   media_gesture: false,
   media_triggered: false,
