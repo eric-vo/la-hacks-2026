@@ -34,7 +34,8 @@ def _messages(signed_text: str) -> list[dict]:
                 "recognition is imperfect so there may be errors or missing letters.\n\n"
                 f"Signed letters so far: {signed_text}\n\n"
                 "Complete or correct this into the most likely English word or short phrase "
-                "the person intends to send. Reply with ONLY the corrected text — "
+                "the person intends to send. If the phrase is a sentence, capitalize and punctuate it. "
+                "Otherwise, reply with ONLY the corrected text — "
                 "no explanation, no punctuation unless grammatically required."
             ),
         }
