@@ -41,7 +41,6 @@ _latest_state: dict = {
     "pinch_ratio": None,
     "mouse_down": False,
     "double_click": False,
-    "triple_click": False,
     "thumb_up": False,
     "media_gesture": False,
     "media_triggered": False,
@@ -173,6 +172,23 @@ def _camera_loop():
                     thumb_up_fired = False
 
                 thumb_up_active = thumb_up_frames >= _THUMB_UP_FRAMES_REQUIRED
+            # Log on state transitions only.
+            if cursor_status.active != prev_cursor_active:
+                log_event(
+                    "cursor_on" if cursor_status.active else "cursor_off",
+                    "Cursor Mode ON" if cursor_status.active else "Cursor Mode OFF",
+                )
+            if cursor_status.mouse_down and not prev_mouse_down:
+                log_event("single_click", "Single Click")
+            if cursor_status.double_click and not prev_double_click:
+                log_event("double_click", "Double Click")
+            if media_status.triggered and not prev_media_triggered:
+                log_event("media_play_pause", "Play / Pause")
+
+            prev_cursor_active   = cursor_status.active
+            prev_mouse_down      = cursor_status.mouse_down
+            prev_double_click    = cursor_status.double_click
+            prev_media_triggered = bool(media_status.triggered)
 
                 # Log on state transitions only.
                 if cursor_status.active != prev_cursor_active:
@@ -217,6 +233,16 @@ def _camera_loop():
                     })
             except Exception as exc:  # noqa: BLE001
                 print(f"[camera loop] frame error: {exc}")
+            # Update gesture state for WebSocket clients.
+            with _state_lock:
+                _latest_state.update({
+                    "cursor_active":   cursor_status.active,
+                    "pinch_ratio":     cursor_status.pinch_ratio,
+                    "mouse_down":      cursor_status.mouse_down,
+                    "double_click":    cursor_status.double_click,
+                    "media_gesture":   media_status.gesture_detected,
+                    "media_triggered": bool(media_status.triggered),
+                })
     finally:
         cursor_feature.release()
         cap.release()
