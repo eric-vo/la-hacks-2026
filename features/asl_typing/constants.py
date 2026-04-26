@@ -1,6 +1,8 @@
 from pathlib import Path
 
 ASL_LETTERS = [chr(code) for code in range(ord("A"), ord("Z") + 1)]
+ASL_SPECIAL_TOKENS = ["SPACE", "BACKSPACE"]
+ASL_LABELS = ASL_LETTERS + ASL_SPECIAL_TOKENS
 
 # Landmark indices.
 WRIST = 0
@@ -61,8 +63,11 @@ LETTER_TO_GROUP = {
     # Separate U and V into distinct groups
     "U": "G9",
     "V": "G10",
+    # Special typing controls.
+    "SPACE": "G11",
+    "BACKSPACE": "G12",
 }
 
-# Ensure every letter has a group assignment.
-for letter in ASL_LETTERS:
-    LETTER_TO_GROUP.setdefault(letter, "G7")
+# Ensure every trainable label has a group assignment.
+for label in ASL_LABELS:
+    LETTER_TO_GROUP.setdefault(label, "G7")

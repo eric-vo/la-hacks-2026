@@ -97,13 +97,7 @@ class AslTypingFeature:
             and self.candidate_frames >= STABLE_FRAMES_REQUIRED
             and self.current_candidate != self.blocked_letter
         ):
-            committed = (
-                self.current_candidate.upper()
-                if TYPE_UPPERCASE
-                else self.current_candidate.lower()
-            )
-            pyautogui.write(committed)
-            self.typed_text = (self.typed_text + committed)[-MAX_BUFFER_CHARS:]
+            committed = self._commit_label(self.current_candidate)
             status.committed_letter = committed
             self.cooldown_frames = COMMIT_COOLDOWN_FRAMES
             self.blocked_letter = self.current_candidate
@@ -140,3 +134,19 @@ class AslTypingFeature:
             return
 
         self.change_frames = 0
+
+    def _commit_label(self, label):
+        if label == "SPACE":
+            pyautogui.press("space")
+            self.typed_text = (self.typed_text + " ")[-MAX_BUFFER_CHARS:]
+            return "SPACE"
+
+        if label == "BACKSPACE":
+            pyautogui.press("backspace")
+            self.typed_text = self.typed_text[:-1]
+            return "BACKSPACE"
+
+        committed = label.upper() if TYPE_UPPERCASE else label.lower()
+        pyautogui.write(committed)
+        self.typed_text = (self.typed_text + committed)[-MAX_BUFFER_CHARS:]
+        return committed
