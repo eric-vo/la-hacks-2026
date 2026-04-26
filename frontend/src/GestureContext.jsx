@@ -15,6 +15,7 @@ const DEFAULT_STATE = {
   gemma_prediction: '',
   gemma_thinking: false,
   gemma_error: '',
+  active_mode: 'control',
 }
 
 export function GestureProvider({ children }) {

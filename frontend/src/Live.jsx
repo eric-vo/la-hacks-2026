@@ -40,8 +40,8 @@ export default function Live() {
   const clickLabel = state.double_click
     ? '⚡ Double Click'
     : state.mouse_down
-    ? '🔴 Holding'
-    : '—'
+      ? '🔴 Holding'
+      : '—'
 
   return (
     <div className="live-page">
@@ -55,65 +55,88 @@ export default function Live() {
       </div>
 
       <div className="live-body">
+        {/* ── Mode indicator ── */}
+        <div className="mode-indicator" style={{
+          textAlign: 'center',
+          padding: '12px',
+          marginBottom: '16px',
+          backgroundColor: state.active_mode === 'typing' ? 'rgba(220, 120, 0, 0.1)' : 'rgba(40, 220, 40, 0.1)',
+          border: `2px solid ${state.active_mode === 'typing' ? '#dc7800' : '#28dc28'}`,
+          borderRadius: '8px',
+          fontWeight: 'bold',
+        }}>
+          <span style={{ fontSize: '18px', color: state.active_mode === 'typing' ? '#dc7800' : '#28dc28' }}>
+            Mode: {state.active_mode === 'typing' ? '⌨️ TYPING' : '🖱️ CONTROL'}
+          </span>
+          <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#888' }}>
+            Thumbs down to switch
+          </p>
+        </div>
+
         {/* ── Camera feed ── */}
         <div className="live-camera-wrap">
           {connected
             ? <img className="live-camera" src="http://localhost:8000/video" alt="live hand tracking feed" />
             : <div className="live-camera-placeholder">
-                <span>📷</span>
-                <p>Waiting for server…</p>
-              </div>
+              <span>📷</span>
+              <p>Waiting for server…</p>
+            </div>
           }
         </div>
 
         {/* ── Status panels ── */}
         <div className="live-panels">
-          <Panel title="Cursor Mode">
-            <StatusBadge on={state.cursor_active} labelOn="Active" labelOff="Inactive" />
-            <p className="panel-hint">
-              {state.cursor_active ? 'C-claw grip active — move hand to steer' : 'Raise index finger to activate'}
-            </p>
-          </Panel>
+          {state.active_mode === 'control' ? (
+            <>
+              <Panel title="Cursor Mode">
+                <StatusBadge on={state.cursor_active} labelOn="Active" labelOff="Inactive" />
+                <p className="panel-hint">
+                  {state.cursor_active ? 'C-claw grip active — move hand to steer' : 'Raise index finger to activate'}
+                </p>
+              </Panel>
 
-          <Panel title="Pinch">
-            <PinchBar ratio={state.pinch_ratio} />
-            <p className="panel-hint">Quick tap = single click · ×2 = double · hold = drag</p>
-          </Panel>
+              <Panel title="Pinch">
+                <PinchBar ratio={state.pinch_ratio} />
+                <p className="panel-hint">Quick tap = single click · ×2 = double · hold = drag</p>
+              </Panel>
 
-          <Panel title="Click State">
-            <span className={`click-label ${(state.mouse_down || state.double_click || state.triple_click) ? 'click-active' : ''}`}>
-              {clickLabel}
-            </span>
-          </Panel>
+              <Panel title="Click State">
+                <span className={`click-label ${(state.mouse_down || state.double_click || state.triple_click) ? 'click-active' : ''}`}>
+                  {clickLabel}
+                </span>
+              </Panel>
 
-          <Panel title="Media">
-            <StatusBadge
-              on={state.media_triggered}
-              labelOn="▶︎ Play / Pause fired"
-              labelOff={state.media_gesture ? 'Holding open palm…' : 'Ready'}
-            />
-          </Panel>
+              <Panel title="Media">
+                <StatusBadge
+                  on={state.media_triggered}
+                  labelOn="▶︎ Play / Pause fired"
+                  labelOff={state.media_gesture ? 'Holding open palm…' : 'Ready'}
+                />
+              </Panel>
+            </>
+          ) : (
+            <>
+              <Panel title="ASL Input">
+                <div className="asl-row">
+                  <span className="asl-candidate">{state.asl_candidate ?? '—'}</span>
+                  <span className="asl-typed">{state.asl_typed || <em>nothing typed yet</em>}</span>
+                </div>
+              </Panel>
 
-          <Panel title="ASL Input">
-            <div className="asl-row">
-              <span className="asl-candidate">{state.asl_candidate ?? '—'}</span>
-              <span className="asl-typed">{state.asl_typed || <em>nothing typed yet</em>}</span>
-            </div>
-          </Panel>
-
-          <Panel title="Gemma Prediction">
-            <p className={`gemma-prediction ${state.gemma_thinking ? 'gemma-thinking' : ''} ${state.gemma_error ? 'gemma-error' : ''}`}>
-              {state.gemma_thinking
-                ? 'Thinking…'
-                : state.gemma_error
-                ? state.gemma_error
-                : state.gemma_prediction || <em>waiting for input</em>}
-            </p>
-            <p className="panel-hint">
-              {state.thumb_up ? 'Sending to Gemma…' : 'Thumbs up to predict'}
-            </p>
-          </Panel>
-
+              <Panel title="Gemma Prediction">
+                <p className={`gemma-prediction ${state.gemma_thinking ? 'gemma-thinking' : ''} ${state.gemma_error ? 'gemma-error' : ''}`}>
+                  {state.gemma_thinking
+                    ? 'Thinking…'
+                    : state.gemma_error
+                      ? state.gemma_error
+                      : state.gemma_prediction || <em>waiting for input</em>}
+                </p>
+                <p className="panel-hint">
+                  {state.thumb_up ? 'Sending to Gemma…' : 'Thumbs up to predict'}
+                </p>
+              </Panel>
+            </>
+          )}
         </div>
       </div>
     </div>

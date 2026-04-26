@@ -18,14 +18,28 @@ from features import gemma_assistant
 from features.asl_typing import AslTypingFeature
 from features.cursor_control import (
     CursorControlFeature,
-    THUMB_TIP, INDEX_TIP, INDEX_MCP,
-    MIDDLE_TIP, MIDDLE_MCP,
-    RING_TIP, RING_MCP,
-    PINKY_TIP, PINKY_MCP,
+    CursorStatus,
+    THUMB_TIP, INDEX_TIP, INDEX_MCP, INDEX_PIP,
+    MIDDLE_TIP, MIDDLE_MCP, MIDDLE_PIP,
+    RING_TIP, RING_MCP, RING_PIP,
+    PINKY_TIP, PINKY_MCP, PINKY_PIP,
     WRIST,
     euclidean, palm_size,
 )
-from features.media_control import MediaControlFeature
+
+# Mode switch constants (thumbs down gesture)
+THUMB_IP = 3
+THUMB_MCP = 2
+MODE_SWITCH_THUMB_EXTEND_MARGIN_RATIO = 0.08
+MODE_SWITCH_FOLD_MARGIN_RATIO = 0.02
+MODE_SWITCH_THUMB_DOWN_Y_RATIO = 0.08
+MODE_SWITCH_HOLD_FRAMES = 7
+MODE_SWITCH_COOLDOWN_FRAMES = 20
+
+def _euclidean_2d(a, b):
+    return ((a.x - b.x) ** 2 + (a.y - b.y) ** 2) ** 0.5
+
+from features.media_control import MediaControlFeature, MediaStatus
 from logger import log_event
 
 load_dotenv()
@@ -49,6 +63,7 @@ _latest_state: dict = {
     "gemma_prediction": "",
     "gemma_thinking": False,
     "gemma_error": "",
+    "active_mode": "control",
 }
 
 # ── Hand skeleton drawing ─────────────────────────────────────────────────────
@@ -80,6 +95,41 @@ def _draw_landmarks(frame, landmarks):
                  (90, 180, 255), 2)
     for i, lm in enumerate(landmarks):
         cv2.circle(frame, (int(lm.x * w), int(lm.y * h)), 4, _landmark_color(i), -1)
+
+# Thumbs-down gesture for mode switching
+def _is_mode_switch_gesture(landmarks) -> bool:
+    if not landmarks:
+        return False
+    wrist = landmarks[WRIST]
+    palm = max(
+        _euclidean_2d(wrist, landmarks[INDEX_MCP]),
+        _euclidean_2d(wrist, landmarks[PINKY_MCP]),
+        1e-6,
+    )
+    
+    def finger_folded(tip_idx, pip_idx):
+        tip_dist = _euclidean_2d(wrist, landmarks[tip_idx])
+        pip_dist = _euclidean_2d(wrist, landmarks[pip_idx])
+        return tip_dist < pip_dist + MODE_SWITCH_FOLD_MARGIN_RATIO * palm
+    
+    thumb_tip_dist = _euclidean_2d(wrist, landmarks[THUMB_TIP])
+    thumb_mcp_dist = _euclidean_2d(wrist, landmarks[THUMB_MCP])
+    thumb_extended = thumb_tip_dist > thumb_mcp_dist + MODE_SWITCH_THUMB_EXTEND_MARGIN_RATIO * palm
+    thumb_down = landmarks[THUMB_TIP].y > wrist.y + MODE_SWITCH_THUMB_DOWN_Y_RATIO * palm
+    
+    index_folded = finger_folded(INDEX_TIP, INDEX_PIP)
+    middle_folded = finger_folded(MIDDLE_TIP, MIDDLE_MCP)
+    ring_folded = finger_folded(RING_TIP, RING_MCP)
+    pinky_folded = finger_folded(PINKY_TIP, PINKY_MCP)
+    
+    return (
+        thumb_extended
+        and thumb_down
+        and index_folded
+        and middle_folded
+        and ring_folded
+        and pinky_folded
+    )
 
 # Thumbs-up: thumb tip well above wrist, four fingers folded.
 _THUMB_UP_FRAMES_REQUIRED = 12  # ~0.4 s at 30 fps
@@ -137,6 +187,11 @@ def _camera_loop():
     prev_gemma_prediction = ""
     thumb_up_frames = 0
     thumb_up_fired = False
+    
+    active_mode = "control"
+    mode_switch_hold_frames = 0
+    mode_switch_cooldown_frames = 0
+    mode_switch_armed = True
 
     try:
         while True:
@@ -155,9 +210,37 @@ def _camera_loop():
                 if landmarks:
                     _draw_landmarks(frame, landmarks)
 
-                cursor_status = cursor_feature.process_landmarks(landmarks)
-                media_status  = media_feature.process_landmarks(landmarks)
-                typing_status = typing_feature.process_landmarks(landmarks)
+                # Mode switching logic with thumbs-down gesture
+                if mode_switch_cooldown_frames > 0:
+                    mode_switch_cooldown_frames -= 1
+                
+                switch_gesture_active = bool(landmarks) and _is_mode_switch_gesture(landmarks)
+                if not switch_gesture_active:
+                    mode_switch_armed = True
+                
+                if mode_switch_armed and switch_gesture_active and mode_switch_cooldown_frames == 0:
+                    mode_switch_hold_frames += 1
+                    if mode_switch_hold_frames >= MODE_SWITCH_HOLD_FRAMES:
+                        active_mode = "control" if active_mode == "typing" else "typing"
+                        mode_switch_hold_frames = 0
+                        mode_switch_cooldown_frames = MODE_SWITCH_COOLDOWN_FRAMES
+                        mode_switch_armed = False
+                else:
+                    mode_switch_hold_frames = 0
+
+                # Gate features based on active mode
+                if active_mode == "control":
+                    cursor_status = cursor_feature.process_landmarks(landmarks)
+                    media_status  = media_feature.process_landmarks(landmarks)
+                else:
+                    cursor_feature.release()
+                    cursor_status = CursorStatus()
+                    media_status = MediaStatus()
+
+                # Typing is only enabled in typing mode
+                typing_status = typing_feature.process_landmarks(
+                    landmarks, enabled=(active_mode == "typing")
+                )
 
                 # Thumbs-up triggers Gemma on accumulated typed text.
                 if _is_thumb_up(landmarks):
@@ -219,6 +302,7 @@ def _camera_loop():
                         "gemma_prediction": gemma["prediction"],
                         "gemma_thinking":   gemma["thinking"],
                         "gemma_error":      gemma.get("error", ""),
+                        "active_mode":      active_mode,
                     })
             except Exception as exc:  # noqa: BLE001
                 print(f"[camera loop] frame error: {exc}")
