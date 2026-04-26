@@ -1,6 +1,6 @@
 # SignPC
 
-[![SignPC Demo](https://ytcards.demolab.com/?id=N3-DQ1GQZJg&title=SignPC+Demo&lang=en&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=600&border_radius=8)](https://www.youtube.com/watch?v=N3-DQ1GQZJg)
+[![SignPC Demo](demo-thumbnail.jpg)](https://www.youtube.com/watch?v=N3-DQ1GQZJg)
 
 Control your computer with only your hand and a webcam — no extra hardware required. SignPC uses MediaPipe to track 21 hand landmarks at 30 FPS and maps gestures to system actions.
 
