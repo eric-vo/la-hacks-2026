@@ -282,12 +282,6 @@ def _camera_loop():
 
                 gemma = gemma_assistant.get_state()
 
-                # Speak Gemma's prediction as soon as it arrives.
-                new_prediction = gemma["prediction"]
-                if new_prediction and new_prediction != prev_gemma_prediction and not gemma["thinking"]:
-                    speak_word(new_prediction)
-                prev_gemma_prediction = new_prediction
-
                 with _state_lock:
                     _latest_state.update({
                         "cursor_active":    cursor_status.active,
