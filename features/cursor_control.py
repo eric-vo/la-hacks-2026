@@ -51,7 +51,7 @@ DEACTIVATE_REQUIRED_FRAMES = 10
 
 # Pinch click: thumb-tip to index-tip distance relative to palm size.
 # Wider hysteresis band avoids accidental re-triggers at the boundary.
-PINCH_DOWN_THRESHOLD = 0.36
+PINCH_DOWN_THRESHOLD = 0.35
 PINCH_UP_THRESHOLD = 0.38
 PINCH_REQUIRED_FRAMES = 3
 # Cursor freezes as soon as the pinch ratio drops below this, before the click fires,

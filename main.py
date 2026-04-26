@@ -19,6 +19,7 @@ from logger import log_event
 
 # Landmark indices in MediaPipe Hands.
 THUMB_TIP = 4
+THUMB_IP = 3
 INDEX_TIP = 8
 INDEX_PIP = 6
 MIDDLE_TIP = 12
@@ -31,9 +32,10 @@ WRIST = 0
 INDEX_MCP = 5
 PINKY_MCP = 17
 
-# Gesture mode switch ("Italian palm"): all fingertips clustered.
-FINGERTIP_INDICES = [THUMB_TIP, INDEX_TIP, MIDDLE_TIP, RING_TIP, PINKY_TIP]
-MODE_SWITCH_TIP_CLUSTER_RATIO = 0.34
+# Gesture mode switch: index + thumb extended, middle/ring/pinky folded.
+MODE_SWITCH_EXTEND_MARGIN_RATIO = 0.08
+MODE_SWITCH_FOLD_MARGIN_RATIO = 0.02
+MODE_SWITCH_THUMB_INDEX_SEPARATION_RATIO = 1.5
 MODE_SWITCH_HOLD_FRAMES = 7
 MODE_SWITCH_COOLDOWN_FRAMES = 20
 
@@ -79,15 +81,37 @@ def is_mode_switch_gesture(landmarks):
         1e-6,
     )
 
-    tips = [landmarks[idx] for idx in FINGERTIP_INDICES]
-    center_x = sum(point.x for point in tips) / len(tips)
-    center_y = sum(point.y for point in tips) / len(tips)
-    max_tip_to_center = max(
-        ((point.x - center_x) ** 2 + (point.y - center_y) ** 2) ** 0.5
-        for point in tips
+    def finger_extended(tip_idx, pip_idx):
+        tip_dist = _euclidean_2d(wrist, landmarks[tip_idx])
+        pip_dist = _euclidean_2d(wrist, landmarks[pip_idx])
+        return tip_dist > pip_dist + MODE_SWITCH_EXTEND_MARGIN_RATIO * palm
+
+    def finger_folded(tip_idx, pip_idx):
+        tip_dist = _euclidean_2d(wrist, landmarks[tip_idx])
+        pip_dist = _euclidean_2d(wrist, landmarks[pip_idx])
+        return tip_dist < pip_dist + MODE_SWITCH_FOLD_MARGIN_RATIO * palm
+
+    index_extended = finger_extended(INDEX_TIP, INDEX_PIP)
+    thumb_extended = finger_extended(THUMB_TIP, THUMB_IP)
+    middle_folded = finger_folded(MIDDLE_TIP, MIDDLE_PIP)
+    ring_folded = finger_folded(RING_TIP, RING_PIP)
+    pinky_folded = finger_folded(PINKY_TIP, PINKY_PIP)
+
+    thumb_index_separation = (
+        _euclidean_2d(landmarks[THUMB_TIP], landmarks[INDEX_TIP]) / palm
+    )
+    thumb_index_apart = (
+        thumb_index_separation >= MODE_SWITCH_THUMB_INDEX_SEPARATION_RATIO
     )
 
-    return max_tip_to_center <= MODE_SWITCH_TIP_CLUSTER_RATIO * palm
+    return (
+        index_extended
+        and thumb_extended
+        and middle_folded
+        and ring_folded
+        and pinky_folded
+        and thumb_index_apart
+    )
 
 
 def resolve_model_path():
@@ -257,7 +281,7 @@ def draw_status_overlay(
     )
     cv2.putText(
         frame,
-        "Gesture switch: touch all 5 fingertips together",
+        "Gesture switch: index+thumb extended, others folded",
         (10, 295),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.55,
