@@ -42,7 +42,6 @@ LETTER_TO_GROUP = {
     "C": "G2",
     "D": "G2",
     "O": "G2",
-    "R": "G3",
     "W": "G4",
     "F": "G4",
     "I": "G5",
@@ -60,9 +59,10 @@ LETTER_TO_GROUP = {
     # Separate M/N into their own group
     "M": "G8",
     "N": "G8",
-    # Separate U and V into distinct groups
+    # Separate U/V/R into their own group
     "U": "G9",
-    "V": "G10",
+    "V": "G9",
+    "R": "G9",
     # Special typing controls.
     "SPACE": "G11",
     "BACKSPACE": "G12",

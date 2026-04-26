@@ -30,16 +30,13 @@
     "X",
     "Y"
   ],
-  "stage1_accuracy": 0.9675324675324676,
+  "stage1_accuracy": 0.9805194805194806,
   "group_to_letters": {
     "G1": [
       "A",
       "E",
       "S",
       "T"
-    ],
-    "G10": [
-      "V"
     ],
     "G11": [
       "SPACE"
@@ -52,9 +49,6 @@
       "C",
       "D",
       "O"
-    ],
-    "G3": [
-      "R"
     ],
     "G4": [
       "F",
@@ -80,7 +74,9 @@
       "N"
     ],
     "G9": [
-      "U"
+      "R",
+      "U",
+      "V"
     ]
   },
   "group_reports": {
@@ -93,13 +89,6 @@
         "T"
       ],
       "accuracy": 1.0
-    },
-    "G10": {
-      "sample_count": 40,
-      "letters": [
-        "V"
-      ],
-      "accuracy": null
     },
     "G11": {
       "sample_count": 20,
@@ -124,13 +113,6 @@
         "O"
       ],
       "accuracy": 1.0
-    },
-    "G3": {
-      "sample_count": 20,
-      "letters": [
-        "R"
-      ],
-      "accuracy": null
     },
     "G4": {
       "sample_count": 40,
@@ -176,11 +158,13 @@
       "accuracy": 0.9285714285714286
     },
     "G9": {
-      "sample_count": 40,
+      "sample_count": 100,
       "letters": [
-        "U"
+        "R",
+        "U",
+        "V"
       ],
-      "accuracy": null
+      "accuracy": 0.85
     }
   }
 }
