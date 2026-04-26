@@ -77,7 +77,7 @@ export default function Live() {
 
           <Panel title="Pinch">
             <PinchBar ratio={state.pinch_ratio} />
-            <p className="panel-hint">Quick tap = single click · ×2 = double · ×3 = triple · hold = drag</p>
+            <p className="panel-hint">Quick tap = single click · ×2 = double · hold = drag</p>
           </Panel>
 
           <Panel title="Click State">

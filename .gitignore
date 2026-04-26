@@ -33,3 +33,4 @@ frontend/public/events.json
 dist/
 build/
 .pytest_cache/
+voice.py

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import './Home.css'
@@ -112,7 +113,7 @@ const FEATURES = [
   {
     icon: '🖱️',
     title: 'Full Cursor Control',
-    desc: 'Point with your index finger to move the cursor. Pinch to click — single, double, or triple.',
+    desc: 'Point with your index finger to move the cursor. Pinch to click — single, double, or hold to drag.',
     color: '#a78bfa',
   },
   {
@@ -123,8 +124,8 @@ const FEATURES = [
   },
   {
     icon: '👍',
-    title: 'Thumbs Up / Down',
-    desc: 'Say YES or NO with simple, expressive hand signals recognized across cultures.',
+    title: 'AI Autocorrect',
+    desc: 'Hold a thumbs-up after fingerspelling to send your letters to Gemma 4 — it corrects and completes your words on-device.',
     color: '#34d399',
   },
   {
@@ -144,8 +145,8 @@ const FEATURES = [
 const STEPS = [
   {
     num: '01',
-    title: 'Open your webcam',
-    desc: 'Run python main.py. HandBridge opens your camera and begins landmark detection immediately.',
+    title: 'Open the dashboard',
+    desc: 'Click Get Started and allow camera access. HandBridge begins landmark detection immediately in your browser.',
   },
   {
     num: '02',
@@ -155,7 +156,7 @@ const STEPS = [
   {
     num: '03',
     title: 'Pinch to interact',
-    desc: 'Bring index finger to thumb to click. Do it twice for double-click, three times for triple-click.',
+    desc: 'Bring index finger to thumb to click. Do it twice for double-click, or hold to drag.',
   },
 ]
 
@@ -242,12 +243,9 @@ export default function Home() {
             with their hands.
           </p>
           <div className="hero-cta">
-            <a className="btn-primary" href="https://github.com" target="_blank" rel="noreferrer">
+            <Link className="btn-primary" to="/live">
               Get Started
-            </a>
-            <a className="btn-ghost" href="/log">
-              View Live Log →
-            </a>
+            </Link>
           </div>
         </div>
 

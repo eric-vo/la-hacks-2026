@@ -47,7 +47,7 @@
 /* ── Layout ── */
 .live-body {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 3fr 2fr;
   gap: 1.25rem;
   align-items: start;
 }

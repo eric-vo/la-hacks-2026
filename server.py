@@ -15,6 +15,7 @@ from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
 from features import gemma_assistant
+from features.voice import speak_word
 from features.asl_typing import AslTypingFeature
 from features.cursor_control import (
     CursorControlFeature,
@@ -134,6 +135,7 @@ def _camera_loop():
     prev_mouse_down = False
     prev_double_click = False
     prev_media_triggered = False
+    prev_gemma_prediction = ""
     thumb_up_frames = 0
     thumb_up_fired = False
 
@@ -197,6 +199,13 @@ def _camera_loop():
                     _latest_jpeg = jpg.tobytes()
 
                 gemma = gemma_assistant.get_state()
+
+                # Speak Gemma's prediction as soon as it arrives.
+                new_prediction = gemma["prediction"]
+                if new_prediction and new_prediction != prev_gemma_prediction and not gemma["thinking"]:
+                    speak_word(new_prediction)
+                prev_gemma_prediction = new_prediction
+
                 with _state_lock:
                     _latest_state.update({
                         "cursor_active":    cursor_status.active,

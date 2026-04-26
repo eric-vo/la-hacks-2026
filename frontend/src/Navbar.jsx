@@ -22,10 +22,6 @@ export default function Navbar() {
         <NavLink to="/" end className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           Home
         </NavLink>
-        <NavLink to="/live" className={({ isActive }) => `nav-link nav-link-live ${isActive ? 'active' : ''}`}>
-          <span className="nav-live-dot" />
-          Live
-        </NavLink>
       </div>
     </nav>
   )
