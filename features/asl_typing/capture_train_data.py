@@ -9,8 +9,12 @@ import mediapipe as mp
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
-from constants import ASL_LETTERS, IMAGES_DIR, LANDMARKS_CSV
-from normalization import normalize_landmarks
+try:
+    from .constants import ASL_LABELS, IMAGES_DIR, LANDMARKS_CSV
+    from .normalization import normalize_landmarks
+except ImportError:
+    from constants import ASL_LABELS, IMAGES_DIR, LANDMARKS_CSV
+    from normalization import normalize_landmarks
 
 
 def resolve_model_path():
@@ -59,7 +63,11 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Capture ASL training samples for one letter by pressing SPACE."
     )
-    parser.add_argument("letter", type=str, help="Target letter A-Z")
+    parser.add_argument(
+        "label",
+        type=str,
+        help="Target label: A-Z, SPACE, or BACKSPACE",
+    )
     parser.add_argument(
         "--max-samples", type=int, default=200, help="Stop after this many captures"
     )
@@ -73,9 +81,14 @@ def parse_args():
 
 def main():
     args = parse_args()
-    label = args.letter.upper()
-    if label not in ASL_LETTERS:
-        raise ValueError(f"Invalid letter '{args.letter}'. Use A-Z.")
+    label = args.label.strip().upper()
+    if label == " ":
+        label = "SPACE"
+    if label in {"BKSP", "DELETE", "DEL"}:
+        label = "BACKSPACE"
+
+    if label not in ASL_LABELS:
+        raise ValueError(f"Invalid label '{args.label}'. Use A-Z, SPACE, or BACKSPACE.")
 
     model_path = resolve_model_path()
     hand_landmarker = create_hand_landmarker(model_path)

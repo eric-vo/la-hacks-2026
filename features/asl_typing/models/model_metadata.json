@@ -5,6 +5,7 @@
   "trained_letters": [
     "A",
     "B",
+    "BACKSPACE",
     "C",
     "D",
     "E",
@@ -21,6 +22,7 @@
     "Q",
     "R",
     "S",
+    "SPACE",
     "T",
     "U",
     "V",
@@ -28,7 +30,7 @@
     "X",
     "Y"
   ],
-  "stage1_accuracy": 0.952054794520548,
+  "stage1_accuracy": 0.9675324675324676,
   "group_to_letters": {
     "G1": [
       "A",
@@ -38,6 +40,12 @@
     ],
     "G10": [
       "V"
+    ],
+    "G11": [
+      "SPACE"
+    ],
+    "G12": [
+      "BACKSPACE"
     ],
     "G2": [
       "B",
@@ -90,6 +98,20 @@
       "sample_count": 40,
       "letters": [
         "V"
+      ],
+      "accuracy": null
+    },
+    "G11": {
+      "sample_count": 20,
+      "letters": [
+        "SPACE"
+      ],
+      "accuracy": null
+    },
+    "G12": {
+      "sample_count": 20,
+      "letters": [
+        "BACKSPACE"
       ],
       "accuracy": null
     },
