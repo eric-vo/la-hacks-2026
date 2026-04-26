@@ -8,7 +8,10 @@ From project root:
 
 python features/asl_typing/capture_train_data.py A --save-images
 
-- Use the target letter as the first argument (A-Z).
+- Use the target label as the first argument:
+  - `A-Z` for letter typing
+  - `SPACE` for typing a space
+  - `BACKSPACE` for deleting one character
 - Press SPACE to capture one sample.
 - Press Q to quit.
 - Landmark vectors are appended to:
@@ -16,7 +19,7 @@ python features/asl_typing/capture_train_data.py A --save-images
 - Optional images are saved under:
   - features/asl_typing/data/images/<LETTER>/
 
-Repeat for all letters A-Z.
+Repeat for all labels you want to support.
 
 ## 2) Train models
 

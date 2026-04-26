@@ -8,15 +8,26 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 
-from constants import (
-    ASL_LETTERS,
-    FEATURE_VECTOR_SIZE,
-    LANDMARKS_CSV,
-    LETTER_TO_GROUP,
-    MODEL_METADATA_PATH,
-    MODELS_DIR,
-    STAGE1_MODEL_PATH,
-)
+try:
+    from .constants import (
+        ASL_LABELS,
+        FEATURE_VECTOR_SIZE,
+        LANDMARKS_CSV,
+        LETTER_TO_GROUP,
+        MODEL_METADATA_PATH,
+        MODELS_DIR,
+        STAGE1_MODEL_PATH,
+    )
+except ImportError:
+    from constants import (
+        ASL_LABELS,
+        FEATURE_VECTOR_SIZE,
+        LANDMARKS_CSV,
+        LETTER_TO_GROUP,
+        MODEL_METADATA_PATH,
+        MODELS_DIR,
+        STAGE1_MODEL_PATH,
+    )
 
 
 def parse_args():
@@ -40,7 +51,7 @@ def load_dataset(csv_path):
         reader = csv.DictReader(f)
         for row in reader:
             label = row["label"].strip().upper()
-            if label not in ASL_LETTERS:
+            if label not in ASL_LABELS:
                 continue
             vector = [float(row[f"f{i}"]) for i in range(FEATURE_VECTOR_SIZE)]
             labels.append(label)
