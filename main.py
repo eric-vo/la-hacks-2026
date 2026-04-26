@@ -28,6 +28,14 @@ RING_PIP = 14
 PINKY_TIP = 20
 PINKY_PIP = 18
 WRIST = 0
+INDEX_MCP = 5
+PINKY_MCP = 17
+
+# Gesture mode switch ("Italian palm"): all fingertips clustered.
+FINGERTIP_INDICES = [THUMB_TIP, INDEX_TIP, MIDDLE_TIP, RING_TIP, PINKY_TIP]
+MODE_SWITCH_TIP_CLUSTER_RATIO = 0.34
+MODE_SWITCH_HOLD_FRAMES = 7
+MODE_SWITCH_COOLDOWN_FRAMES = 20
 
 
 # MediaPipe hand landmark graph (21 points) connections.
@@ -54,6 +62,32 @@ HAND_CONNECTIONS = [
     (19, 20),
     (0, 17),
 ]
+
+
+def _euclidean_2d(a, b):
+    return ((a.x - b.x) ** 2 + (a.y - b.y) ** 2) ** 0.5
+
+
+def is_mode_switch_gesture(landmarks):
+    if not landmarks:
+        return False
+
+    wrist = landmarks[WRIST]
+    palm = max(
+        _euclidean_2d(wrist, landmarks[INDEX_MCP]),
+        _euclidean_2d(wrist, landmarks[PINKY_MCP]),
+        1e-6,
+    )
+
+    tips = [landmarks[idx] for idx in FINGERTIP_INDICES]
+    center_x = sum(point.x for point in tips) / len(tips)
+    center_y = sum(point.y for point in tips) / len(tips)
+    max_tip_to_center = max(
+        ((point.x - center_x) ** 2 + (point.y - center_y) ** 2) ** 0.5
+        for point in tips
+    )
+
+    return max_tip_to_center <= MODE_SWITCH_TIP_CLUSTER_RATIO * palm
 
 
 def resolve_model_path():
@@ -127,6 +161,7 @@ def draw_status_overlay(
     cursor_status,
     media_status,
     typing_status,
+    switch_hold_frames,
 ):
     mode_text = f"Mode: {active_mode.upper()}"
     mode_color = (40, 220, 40) if active_mode == "cursor" else (220, 180, 60)
@@ -220,6 +255,26 @@ def draw_status_overlay(
         (180, 180, 180),
         1,
     )
+    cv2.putText(
+        frame,
+        "Gesture switch: touch all 5 fingertips together",
+        (10, 295),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.55,
+        (180, 180, 180),
+        1,
+    )
+
+    if switch_hold_frames > 0:
+        cv2.putText(
+            frame,
+            f"Switch hold: {switch_hold_frames}/{MODE_SWITCH_HOLD_FRAMES}",
+            (10, 320),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (60, 220, 255),
+            2,
+        )
 
     cv2.putText(
         frame,
@@ -302,6 +357,9 @@ def main():
     prev_typed_letter = None
 
     active_mode = "cursor"
+    mode_switch_hold_frames = 0
+    mode_switch_cooldown_frames = 0
+    mode_switch_armed = True
 
     try:
         while True:
@@ -320,6 +378,32 @@ def main():
             )
             if landmarks:
                 draw_hand_landmarks(frame, landmarks)
+
+            if mode_switch_cooldown_frames > 0:
+                mode_switch_cooldown_frames -= 1
+
+            switch_gesture_active = bool(landmarks) and is_mode_switch_gesture(
+                landmarks
+            )
+
+            # Rearm only after the gesture is released once.
+            if not switch_gesture_active:
+                mode_switch_armed = True
+
+            if (
+                mode_switch_armed
+                and switch_gesture_active
+                and mode_switch_cooldown_frames == 0
+            ):
+                mode_switch_hold_frames += 1
+                if mode_switch_hold_frames >= MODE_SWITCH_HOLD_FRAMES:
+                    active_mode = "cursor" if active_mode == "typing" else "typing"
+                    log_event("mode_switch", f"Switched mode to: {active_mode}")
+                    mode_switch_hold_frames = 0
+                    mode_switch_cooldown_frames = MODE_SWITCH_COOLDOWN_FRAMES
+                    mode_switch_armed = False
+            else:
+                mode_switch_hold_frames = 0
 
             if active_mode == "cursor":
                 cursor_status = cursor_feature.process_landmarks(landmarks)
@@ -342,6 +426,7 @@ def main():
                 cursor_status,
                 media_status,
                 typing_status,
+                mode_switch_hold_frames,
             )
 
             if cursor_status.active != prev_cursor_active:

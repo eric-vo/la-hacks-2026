@@ -8,3 +8,5 @@ uvicorn[standard]
 numpy
 scikit-learn
 joblib
+httpx
+ollama
