@@ -20,6 +20,7 @@ from logger import log_event
 # Landmark indices in MediaPipe Hands.
 THUMB_TIP = 4
 THUMB_IP = 3
+THUMB_MCP = 2
 INDEX_TIP = 8
 INDEX_PIP = 6
 MIDDLE_TIP = 12
@@ -32,10 +33,10 @@ WRIST = 0
 INDEX_MCP = 5
 PINKY_MCP = 17
 
-# Gesture mode switch: index + thumb extended, middle/ring/pinky folded.
-MODE_SWITCH_EXTEND_MARGIN_RATIO = 0.08
+# Gesture mode switch: thumbs-down pose.
+MODE_SWITCH_THUMB_EXTEND_MARGIN_RATIO = 0.08
 MODE_SWITCH_FOLD_MARGIN_RATIO = 0.02
-MODE_SWITCH_THUMB_INDEX_SEPARATION_RATIO = 1.3
+MODE_SWITCH_THUMB_DOWN_Y_RATIO = 0.08
 MODE_SWITCH_HOLD_FRAMES = 7
 MODE_SWITCH_COOLDOWN_FRAMES = 20
 
@@ -81,36 +82,32 @@ def is_mode_switch_gesture(landmarks):
         1e-6,
     )
 
-    def finger_extended(tip_idx, pip_idx):
-        tip_dist = _euclidean_2d(wrist, landmarks[tip_idx])
-        pip_dist = _euclidean_2d(wrist, landmarks[pip_idx])
-        return tip_dist > pip_dist + MODE_SWITCH_EXTEND_MARGIN_RATIO * palm
-
     def finger_folded(tip_idx, pip_idx):
         tip_dist = _euclidean_2d(wrist, landmarks[tip_idx])
         pip_dist = _euclidean_2d(wrist, landmarks[pip_idx])
         return tip_dist < pip_dist + MODE_SWITCH_FOLD_MARGIN_RATIO * palm
 
-    index_extended = finger_extended(INDEX_TIP, INDEX_PIP)
-    thumb_extended = finger_extended(THUMB_TIP, THUMB_IP)
+    thumb_tip_dist = _euclidean_2d(wrist, landmarks[THUMB_TIP])
+    thumb_mcp_dist = _euclidean_2d(wrist, landmarks[THUMB_MCP])
+    thumb_extended = (
+        thumb_tip_dist > thumb_mcp_dist + MODE_SWITCH_THUMB_EXTEND_MARGIN_RATIO * palm
+    )
+    thumb_down = (
+        landmarks[THUMB_TIP].y > wrist.y + MODE_SWITCH_THUMB_DOWN_Y_RATIO * palm
+    )
+
+    index_folded = finger_folded(INDEX_TIP, INDEX_PIP)
     middle_folded = finger_folded(MIDDLE_TIP, MIDDLE_PIP)
     ring_folded = finger_folded(RING_TIP, RING_PIP)
     pinky_folded = finger_folded(PINKY_TIP, PINKY_PIP)
 
-    thumb_index_separation = (
-        _euclidean_2d(landmarks[THUMB_TIP], landmarks[INDEX_TIP]) / palm
-    )
-    thumb_index_apart = (
-        thumb_index_separation >= MODE_SWITCH_THUMB_INDEX_SEPARATION_RATIO
-    )
-
     return (
-        index_extended
-        and thumb_extended
+        thumb_extended
+        and thumb_down
+        and index_folded
         and middle_folded
         and ring_folded
         and pinky_folded
-        and thumb_index_apart
     )
 
 
@@ -188,7 +185,7 @@ def draw_status_overlay(
     switch_hold_frames,
 ):
     mode_text = f"Mode: {active_mode.upper()}"
-    mode_color = (40, 220, 40) if active_mode == "cursor" else (220, 180, 60)
+    mode_color = (40, 220, 40) if active_mode == "control" else (220, 180, 60)
     cv2.putText(
         frame, mode_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, mode_color, 2
     )
@@ -272,7 +269,7 @@ def draw_status_overlay(
     )
     cv2.putText(
         frame,
-        "Keys: 1=cursor, 2=media, 3=common, 4=typing",
+        "Keys: 1=cursor/media, 4=typing",
         (10, 270),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,
@@ -281,7 +278,7 @@ def draw_status_overlay(
     )
     cv2.putText(
         frame,
-        "Gesture switch: index+thumb extended, others folded",
+        "Gesture switch: thumbs down",
         (10, 295),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.55,
@@ -380,7 +377,7 @@ def main():
     prev_media_triggered = False
     prev_typed_letter = None
 
-    active_mode = "cursor"
+    active_mode = "control"
     mode_switch_hold_frames = 0
     mode_switch_cooldown_frames = 0
     mode_switch_armed = True
@@ -421,7 +418,7 @@ def main():
             ):
                 mode_switch_hold_frames += 1
                 if mode_switch_hold_frames >= MODE_SWITCH_HOLD_FRAMES:
-                    active_mode = "cursor" if active_mode == "typing" else "typing"
+                    active_mode = "control" if active_mode == "typing" else "typing"
                     log_event("mode_switch", f"Switched mode to: {active_mode}")
                     mode_switch_hold_frames = 0
                     mode_switch_cooldown_frames = MODE_SWITCH_COOLDOWN_FRAMES
@@ -429,13 +426,13 @@ def main():
             else:
                 mode_switch_hold_frames = 0
 
-            if active_mode == "cursor":
+            if active_mode == "control":
                 cursor_status = cursor_feature.process_landmarks(landmarks)
             else:
                 cursor_feature.release()
                 cursor_status = CursorStatus()
 
-            if active_mode == "media":
+            if active_mode == "control":
                 media_status = media_feature.process_landmarks(landmarks)
             else:
                 media_status = MediaStatus()
@@ -481,11 +478,7 @@ def main():
             cv2.imshow(win_name, frame)
             key = cv2.waitKey(1) & 0xFF
             if key == ord("1"):
-                active_mode = "cursor"
-            elif key == ord("2"):
-                active_mode = "media"
-            elif key == ord("3"):
-                active_mode = "common"
+                active_mode = "control"
             elif key == ord("4"):
                 active_mode = "typing"
             elif key == ord("r"):
